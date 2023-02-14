@@ -1,0 +1,11 @@
+aiofile>=3.3.3
+beautifulsoup4>=4.9.3
+httpx>=0.16.1
+psycopg2-binary>=2.8.6
+lxml>=4.6.2
+asyncpgsa==0.27.1
+asyncpg>=0.22.0
+SQLAlchemy==1.4
+yarl==1.6.3
+python-dotenv>=0.21.1
+argcomplete==2.0.0
