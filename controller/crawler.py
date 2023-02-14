@@ -62,11 +62,11 @@ class Crawler:
             return wrapper
         return decorator
 
-    @log_time
+    @log_time   # TODO(redd4ford): make it a command argument
     async def crawl(self):
         calls = 0
 
-        @self.use_cache(do=True, silent=self.silent)
+        @self.use_cache(do=True, silent=self.silent)   # TODO(redd4ford): make it a command argument
         async def load(url: URL, level: int):
             nonlocal calls
             calls += 1

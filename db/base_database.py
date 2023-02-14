@@ -24,6 +24,8 @@ class BaseDatabase(abc.ABC):
     Base Database class to be used as parent for all Database subclasses.
     """
 
+    # TODO(redd4ford): implement DB operations for: Redis, MongoDB, MySQL, Elasticsearch
+
     file_controller: BaseFileWriter = BaseFileWriter
     table: Table = None
 
