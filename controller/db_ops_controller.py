@@ -13,6 +13,7 @@ from db.exceptions import (
     DatabaseError,
     CredentialsError,
 )
+from db.utils import RecordSet
 from files_storage import (
     BaseFileWriter,
     HTMLFileWriter
@@ -51,9 +52,8 @@ class DatabaseOperationsController:
             fetched = await db.get(parent, limit=n)
 
             if fetched:
-                for record in fetched:
-                    url, title = record
-                    print(f'{url} | {title}')
+                for record in RecordSet(fetched):
+                    print(f'{record.url} | {record.title}')
             else:
                 print(f'No data found by parent={parent}')
 
