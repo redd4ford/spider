@@ -1,8 +1,8 @@
 from controller import (
     Crawler,
     DatabaseOperationsController,
-    DelayedKeyboardInterrupt,
 )
+from controller.utils.context_managers import DelayedKeyboardInterrupt
 from db import BaseDatabase
 
 
@@ -39,13 +39,13 @@ class MainController:
             :param args: (Namespace) - A set of args entered by the user to perform DB connection,
                 provide a URL (:param args.url:) to crawl by, and provide the number of depth
                 (:param args.depth:). E.g.:
-                    depth=0 means "crawn a main page"
+                    depth=0 means "crawl a main page"
                     depth=1 means "crawl a main page and links inside the main page"
                     depth=2 means "crawl a main page, links inside the main page,
                     and links inside them as well".
                     etc.
         """
-        spider = Crawler(db, args.url, args.depth, args.silent)
+        spider = Crawler(db, args.url, args.depth, args.silent, args.log_time, args.cache)
         with DelayedKeyboardInterrupt():
             await spider.crawl()
 

@@ -5,26 +5,15 @@ from typing import (
 )
 
 import httpx
-import time
-import functools
 
 from bs4 import BeautifulSoup
 from yarl import URL
 
 from db import BaseDatabase
-
-
-def log_time(func):
-    """
-    Measure the elapsed time of a function/method.
-    """
-    @functools.wraps(func)
-    async def wrapper(*args, **kwargs):
-        start_time = time.perf_counter()
-        await func(*args, **kwargs)
-        finish_time = time.perf_counter()
-        print(f'Elapsed time: {finish_time - start_time}')
-    return wrapper
+from controller.utils.decorators import (
+    log_time,
+    use_cache,
+)
 
 
 class Crawler:
@@ -32,41 +21,24 @@ class Crawler:
     Performs crawling of a url with specified depth.
     """
 
-    def __init__(self, database: BaseDatabase, start_url: str, depth: int, silent: bool = False):
+    def __init__(
+        self, database: BaseDatabase, start_url: str, depth: int,
+        silent: bool = False, should_log_time: bool = True, should_use_cache: bool = True,
+    ):
         self.client = httpx.AsyncClient()
-        self.url = URL(start_url)
         self.db = database
+        self.url = URL(start_url)
         self.depth = depth
+
         self.silent = silent
+        self.should_log_time = should_log_time
+        self.should_use_cache = should_use_cache
 
-    @classmethod
-    def use_cache(cls, do: bool = True, silent: bool = False):
-        """
-        Skip already crawled URLs to prevent DB override operations.
-        """
-
-        cache = set()
-
-        def decorator(func):
-            @functools.wraps(func)
-            async def wrapper(url, *args):
-                if do:
-                    if url not in cache:
-                        cache.add(url)
-                        await func(url, *args)
-                    else:
-                        if not silent:
-                            print(f'Found {url} in cache. Skipping...')
-                else:
-                    await func(url, *args)
-            return wrapper
-        return decorator
-
-    @log_time   # TODO(redd4ford): make it a command argument
+    @log_time
     async def crawl(self):
         calls = 0
 
-        @self.use_cache(do=True, silent=self.silent)   # TODO(redd4ford): make it a command argument
+        @use_cache
         async def load(url: URL, level: int):
             nonlocal calls
             calls += 1
@@ -108,11 +80,9 @@ class Crawler:
             print('Done.')
             print(f'Calls: {calls}')
 
-    async def __load_and_parse(
-        self, url: URL
-    ) -> Optional[Tuple[Optional[str], Optional[str], BeautifulSoup]]:
+    async def __load_and_parse(self, url: URL) -> Optional[Tuple[Optional[str], str, BeautifulSoup]]:
         try:
-            res = await self.client.get(str(url))
+            response = await self.client.get(str(url))
         except httpx.HTTPError as exc:
             if not self.silent:
                 print(f'HTTP Exception for {exc.request.url}')
@@ -120,17 +90,7 @@ class Crawler:
         except ValueError:
             return
 
-        # noinspection PyTypeChecker
-        soup = BeautifulSoup(res, 'lxml')
-
-        title_html = soup.title
-        title = getattr(title_html, 'text', None)
-        if title:
-            title = title.replace('\n', '').strip()
-
-        html_body = res.text
-
-        return title, html_body, soup
+        return self.__parsed(response)
 
     def __generate_refs(self, bs_result_set):
         for ref in bs_result_set:
@@ -145,3 +105,17 @@ class Crawler:
                     yield href
             except KeyError:
                 continue
+
+    @classmethod
+    def __parsed(cls, response: httpx.Response) -> Tuple[Optional[str], str, BeautifulSoup]:
+        # noinspection PyTypeChecker
+        soup = BeautifulSoup(response, 'lxml')
+
+        title_html = soup.title
+        title = getattr(title_html, 'text', None)
+        if title:
+            title = title.replace('\n', '').strip()
+
+        html_body = response.text
+
+        return title, html_body, soup
