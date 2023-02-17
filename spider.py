@@ -45,6 +45,15 @@ async def main():
     save_parser.add_argument('url', help='URL-address')
     save_parser.add_argument('--depth', type=int, help='depth of scraping (default=1)', default=1)
     save_parser.add_argument(
+        '--no-cache', dest='cache', action='store_false',
+        help='disable caching of URLs which were scraped during this command run '
+             '(leads to DB/file overwrite operations if this link is present in many pages)',
+    )
+    save_parser.add_argument(
+        '--no-logtime', dest='log_time', action='store_false',
+        help='do not measure crawler execution time',
+    )
+    save_parser.add_argument(
         '--silent',
         action='store_true', default=False, help='prevent the logging from crawler'
     )
