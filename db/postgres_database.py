@@ -14,10 +14,8 @@ from sqlalchemy.dialects.postgresql import insert
 import sqlalchemy.exc
 from yarl import URL
 
-from db.base_database import (
-    BaseDatabase,
-    Singleton,
-)
+from db import BaseDatabase
+from db.utils import Singleton
 from db.exceptions import (
     DatabaseNotFoundError,
     TableNotFoundError,
@@ -40,11 +38,12 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
     PostgreSQL DAO, async implementation.
     """
 
+    default_driver: str = 'postgresql'
     file_controller: BaseFileWriter = HTMLFileWriter
     table: Table = urls_table
     unique_constraint: str = urls_unique_constraint
 
-    def __init__(self, host: str, login: str, pwd: str, db: str, driver: str = 'postgresql'):
+    def __init__(self, host: str, login: str, pwd: str, db: str, driver: str = default_driver):
         super().__init__()
         self.__conn_string = f'{driver}://{login}:{pwd}@{host}/{db}'
 
@@ -159,7 +158,7 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
         if old_html:
             self.file_controller.delete(old_html)
             if not silent:
-                print(f'Override file: {old_html}')
+                print(f'Overwrite file: {old_html}')
 
         return await self.file_controller.write(url, content)
 
