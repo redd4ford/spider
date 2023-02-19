@@ -36,14 +36,16 @@ class Crawler:
 
     @log_time
     async def crawl(self):
-        calls = 0
+        successful_crawls_counter = 0
+        total_calls = 0
 
         @use_cache
         async def load(url: URL, level: int):
-            nonlocal calls
-            calls += 1
+            nonlocal total_calls, successful_crawls_counter
+            total_calls += 1
             try:
                 title, html_body, soup = await self.__load_and_parse(url)
+                successful_crawls_counter += 1
             except TypeError:
                 if not self.silent:
                     print(f'Cannot download URL: {url}.')
@@ -65,7 +67,7 @@ class Crawler:
 
         try:
             # trying to connect to db
-            await self.db.controller()
+            await self.db.connect()
             self.db.create_table(check_first=True, silent=True)
         except Exception as exc:
             print(f'Database error: {exc}')
@@ -75,10 +77,11 @@ class Crawler:
             await load(self.url, 0)
         finally:
             await self.client.aclose()
-            controller = await self.db.controller()
-            await controller.pool.close()
-            print('Done.')
-            print(f'Calls: {calls}')
+            await self.db.disconnect()
+            print(
+                f'Done.\n'
+                f'Crawled: {successful_crawls_counter}\n'
+                f'Total calls: {total_calls}')
 
     async def __load_and_parse(self, url: URL) -> Optional[Tuple[Optional[str], str, BeautifulSoup]]:
         try:

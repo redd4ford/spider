@@ -44,7 +44,7 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
     unique_constraint: str = urls_unique_constraint
 
     def __init__(self, host: str, login: str, pwd: str, db: str, driver: str = default_driver):
-        super().__init__()
+        super().__init__(host, login, pwd, db, driver)
         self.__conn_string = f'{driver}://{login}:{pwd}@{host}/{db}'
 
         self.__pg = PG()
@@ -62,12 +62,19 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
             )
             self.is_initialized = True
 
-    async def controller(self) -> PG:
+    async def connect(self) -> PG:
         """
         Return object that can generate a transaction.
         """
         await self.__init()
         return self.__pg
+
+    async def disconnect(self):
+        """
+        Close the pool.
+        """
+        if self.is_initialized:
+            await self.__pg.pool.close()
 
     def engine(self, silent: bool = False) -> Engine:
         """
@@ -84,7 +91,7 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
         Save an entry to the DB.
         """
         try:
-            pg = await self.controller()
+            pg = await self.connect()
             async with pg.transaction() as conn:
                 query = (
                     insert(self.table)
@@ -125,7 +132,7 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
         The number of entries to get can be limited by :param limit:.
         """
         try:
-            pg = await self.controller()
+            pg = await self.connect()
             async with pg.transaction() as conn:
                 query = (
                     select([self.table.c.url, self.table.c.title])
@@ -162,20 +169,18 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
 
         return await self.file_controller.write(url, content)
 
-    async def count_all(self):
+    async def count_all(self) -> int:
         """
         Count all entries in the DB.
         """
         try:
-            pg = await self.controller()
+            pg = await self.connect()
             async with pg.transaction() as conn:
                 query = (
                     select([func.count()]).select_from(self.table)
                 )
 
                 result = await conn.fetch(query)
-                counter = result[0].get('count_1', 0)
-                print(f'Found {counter} entries in the DB.')
         except asyncpg.exceptions.InvalidCatalogNameError:
             raise DatabaseNotFoundError
         except asyncpg.exceptions.UndefinedTableError:
@@ -184,6 +189,7 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
             raise CredentialsError
         else:
             await pg.pool.close()
+        return result[0].get('count_1', 0)
 
     def drop_table(self, check_first: bool = False, silent: bool = False):
         """

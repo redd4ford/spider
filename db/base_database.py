@@ -16,11 +16,21 @@ class BaseDatabase(abc.ABC):
     file_controller: BaseFileWriter = BaseFileWriter
     table: Table = None
 
-    def __init__(self):
+    def __init__(self, host: str, login: str, pwd: str, db: str, driver: str = ''):
         super().__init__()
 
     @abc.abstractmethod
-    async def controller(self):
+    async def connect(self):
+        """
+        Initiate database connection.
+        """
+        pass
+
+    @abc.abstractmethod
+    async def disconnect(self):
+        """
+        Close the pool/session.
+        """
         pass
 
     @abc.abstractmethod
