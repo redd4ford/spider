@@ -1,0 +1,6 @@
+[DATABASE]
+type = postgresql/mysql/sqlite/mongodb/redis
+username = user
+password = pwd
+host = URL:PORT
+name = spider

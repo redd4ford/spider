@@ -155,4 +155,8 @@ cython_debug/
 # PyCharm
 .idea/
 
+# Crawled files
 files_storage/*_files/
+
+# Local config
+config.ini
