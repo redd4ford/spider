@@ -33,16 +33,31 @@ Uses Python 3.9.
   * Linux/MacOS: source venv/bin/activate
   * Windows: venv\Scripts\activate
 * Install requirements: `pip install -r requirements.txt`
-* (Opt) create `.env` based on `.env.example` to specify DB credentials.
+* (Opt) create `config.ini` based on `config.ini.example` to specify DB credentials.
 
 ## Usage
 
 `-h` or `--help` will print you the list of arguments and/or possible actions to perform.
 
+### Config.ini
+
+Spider uses `config.ini` to store your default database credentials. You can create it yourself or add the following arguments to your commands:
+* `--db-type` - {postgresql, mysql, sqlite, mongodb, redis, elasticsearch}
+* `--db-user` - username
+* `--db-pwd` - password
+* `--db-host` - host in this format: `IP:PORT`
+* `--db-name` - database name
+
+The first time you run a command, these arguments will be stored to a `config.ini` and will be used as default values whenever you don't provide DB access credentials.
+
+If you wish to overwrite your config defaults (or just any specific value, e.g. database type), add argument `--db-update`.
+
+### Commands
+
 * `python spider.py get [url] -n [int]` - get **n** URLs from the DB where parent URL=**url**
 * `python spider.py crawl [url] --depth [int]` - crawl **url** with specified **depth**.
   * `--depth` (default=1) - specify how many child URLs (`<a>` tags) you want to crawl
-  * `--silent` (opt) - use this argument to run the command in silent mode, without any logs
+  * `--silent` (opt) - use this argument to run the command in silent mode, without any logs from the crawler
   * `--no-cache`(opt) - disable caching of URLs which were scraped during this command run (leads to DB/file overwrite operations if this link is present in many pages)
   * `--no-logtime` (opt) - disable crawler execution time measuring
 * `python spider.py cobweb [action]` - perform DB operations: `drop/create/count`.
@@ -54,9 +69,9 @@ Uses Python 3.9.
 ## TODO
 
 - [ ] Implement DB operations for Redis, MongoDB, MySQL, Elasticsearch 
-- [ ] Implement DB switch action in `cobweb`
+- [ ] Implement `--no-overwrite (bool)` parameter in `crawl`
 - [ ] Implement parsing of different types of files (XML, CSS etc.)
-- [ ] Implement file type switch parameter in `crawl`
+- [ ] Implement `--file-type (str in choices)` parameter in `crawl`
 - [ ] Implement proper logging
 - [ ] Turn this into a command-line tool with setup options (probably use Typer instead of argparse?)
 - [ ] Configure autocomplete 
@@ -66,6 +81,7 @@ Uses Python 3.9.
 
 - [x] Implement a record iterator to display the output for `get`
 - [x] Implement `--no-cache` and `--no-logtime` parameters for decorators
+- [x] Implement DB switch -- done this as a `--db-type` parameter, switched to configparser
 
 ## Why?
 
