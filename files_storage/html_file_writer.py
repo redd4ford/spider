@@ -36,7 +36,7 @@ class HTMLFileWriter(BaseFileWriter):
         return str(path)
 
     @classmethod
-    def delete(cls, file_name: Any) -> None:
+    def delete(cls, file_name: Any):
         """
         Delete the file by filename.
         """
@@ -45,7 +45,7 @@ class HTMLFileWriter(BaseFileWriter):
             os.remove(cls.PATH_TO_FILES.joinpath(file_name))
 
     @classmethod
-    def drop_all(cls) -> None:
+    def drop_all(cls):
         """
         Delete all files in the folder, but not drop the folder itself.
         """
@@ -66,6 +66,6 @@ class HTMLFileWriter(BaseFileWriter):
         return os.path.exists(cls.PATH_TO_FILES)
 
     @classmethod
-    def __create_folder_if_not_exists(cls) -> None:
+    def __create_folder_if_not_exists(cls):
         if not cls.__is_folder_exists():
             os.makedirs(cls.PATH_TO_FILES)

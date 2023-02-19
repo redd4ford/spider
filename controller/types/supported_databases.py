@@ -2,6 +2,10 @@ from controller.types.abstract_type import AbstractType
 
 
 class SupportedDatabases(AbstractType):
+    """
+    Supported database implementations for `--db-type` argument.
+    """
+
     POSTGRESQL = 'postgresql'
     MYSQL = 'mysql'
     SQLITE = 'sqlite'
