@@ -140,7 +140,6 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
                     .limit(limit)
                 )
 
-                # TODO(redd4ford): implement Record -> EntriesIterator conversion
                 return await conn.fetch(query)
         except asyncpg.exceptions.InvalidCatalogNameError:
             raise DatabaseNotFoundError
