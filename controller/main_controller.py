@@ -3,7 +3,6 @@ from controller import (
     DatabaseOperationsController,
 )
 from controller.utils.context_managers import DelayedKeyboardInterrupt
-from db import BaseDatabase
 
 
 class MainController:
@@ -21,21 +20,20 @@ class MainController:
                 of DB entries returned (:param args.n:).
         """
         db_login_args = (
-            args.db_user, args.db_pwd, args.db_host, args.db_name
+            args.db_type, args.db_user, args.db_pwd, args.db_host, args.db_name
         )
         get_args = (args.url, args.n)
 
-        await DatabaseOperationsController.get(*db_login_args, *get_args)
+        await (
+            DatabaseOperationsController(*db_login_args)
+            .get(*get_args)
+        )
 
     @classmethod
-    @DatabaseOperationsController.inject_db
-    async def save(cls, db: BaseDatabase, args):
+    async def save(cls, args):
         """
-        Perform crawling, store data to the DB and to the local files storage.
+        Perform crawling, store data to the DB and to the local file storage.
         Args:
-            :param db: (Database) - DB object to handle SELECT operation. This object is
-                generated in @DatabaseOperationsController.inject_db and is auto-injected,
-                no need to provide it in main().
             :param args: (Namespace) - A set of args entered by the user to perform DB connection,
                 provide a URL (:param args.url:) to crawl by, and provide the number of depth
                 (:param args.depth:). E.g.:
@@ -45,28 +43,37 @@ class MainController:
                     and links inside them as well".
                     etc.
         """
-        spider = Crawler(db, args.url, args.depth, args.silent, args.log_time, args.cache)
+        db_login_args = (
+            args.db_type, args.db_user, args.db_pwd, args.db_host, args.db_name
+        )
+
+        crawl_args = (
+            args.url, args.depth, args.silent, args.log_time, args.cache
+        )
+
+        spider = Crawler(
+            DatabaseOperationsController(*db_login_args).db,
+            *crawl_args
+        )
         with DelayedKeyboardInterrupt():
             await spider.crawl()
 
     @classmethod
     async def db(cls, args):
         """
-        Perform actions on the DB. Currently, supports only "create" and "drop" for the table.
+        Perform actions on the DB. See class `Actions` which contains all the supported actions.
         Args:
             :param args: (Namespace) - A set of args entered by the user to specify the exact
                 action (:param args.action:), and perform DB connection.
         """
-        action = args.action.lower().strip()
         db_login_args = (
-            args.db_user, args.db_pwd, args.db_host, args.db_name
+            args.db_type, args.db_user, args.db_pwd, args.db_host, args.db_name
         )
 
-        if action == 'create':
-            await DatabaseOperationsController.create_table(*db_login_args)
-        elif action == 'drop':
-            await DatabaseOperationsController.drop_table(*db_login_args)
-        elif action == 'count':
-            await DatabaseOperationsController.count_all(*db_login_args)
-        else:
-            print(f'Action `{action}` is not supported.')
+        await (
+            DatabaseOperationsController(*db_login_args)
+            .run_action(
+                action=args.action.lower().strip(),
+                silent=args.silent,
+            )
+        )

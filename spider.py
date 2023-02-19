@@ -4,18 +4,22 @@
 import argparse
 import argcomplete
 import asyncio
-import os
-from dotenv import load_dotenv
 
-from controller import MainController
-
+from controller import (
+    MainController,
+    ConfigController,
+)
+from controller.types import (
+    SupportedActions,
+    SupportedDatabases,
+)
 
 __app_name__ = 'spider'
 __version__ = '0.0.1'
 
 
 async def main():
-    load_dotenv()
+    config = ConfigController()
 
     # TODO(redd4ford): switch to Typer?
 
@@ -26,10 +30,17 @@ async def main():
         action='version', version=f'{__app_name__} by redd4ford | v{__version__}'
     )
 
-    main_parser.add_argument('--db_user', required=False, default=os.getenv('DB_USER'))
-    main_parser.add_argument('--db_pwd', required=False, default=os.getenv('DB_PASSWORD'))
-    main_parser.add_argument('--db_host', required=False, default=os.getenv('DB_HOST'))
-    main_parser.add_argument('--db_name', required=False, default=os.getenv('DB'))
+    main_parser.add_argument('--db-user', required=False, default=config.get_db_config('username'))
+    main_parser.add_argument('--db-pwd', required=False, default=config.get_db_config('password'))
+    main_parser.add_argument('--db-host', required=False, default=config.get_db_config('host'))
+    main_parser.add_argument('--db-name', required=False, default=config.get_db_config('name'))
+    main_parser.add_argument(
+        '--db-type', required=False, choices=SupportedDatabases.all(), default=config.get_db_config('type')
+    )
+    main_parser.add_argument(
+        '--db-update', action='store_true', default=False,
+        help=f'update default DB login credentials in `{config.file_name}`'
+    )
 
     subparsers = main_parser.add_subparsers(help='Available commands.')
 
@@ -60,7 +71,7 @@ async def main():
     save_parser.set_defaults(func=MainController.save)
 
     db_ops_parser = subparsers.add_parser('cobweb', help='DB operations.')
-    db_ops_parser.add_argument('action', help='drop/create/count')   # TODO(redd4ford): implement DB switch action
+    db_ops_parser.add_argument('action', choices=SupportedActions.all())
     db_ops_parser.add_argument(
         '--silent',
         action='store_true', default=False, help='prevent the logging from DB/ORM'
@@ -70,10 +81,29 @@ async def main():
     argcomplete.autocomplete(main_parser)   # TODO(redd4ford): finish autocomplete
     args = main_parser.parse_args()
 
-    if func := getattr(args, 'func', None):
-        await func(args)
+    if config.is_db_config_empty() and any(
+        [
+            args.db_type is None,
+            args.db_user is None,
+            args.db_pwd is None,
+            args.db_host is None,
+            args.db_name is None
+        ]
+    ):
+        print(
+            f'Cannot process your command without database login credentials. '
+            f'`{config.file_name}` is empty, and you did not provide full connection details in your args.\n'
+            f'The next time you run a command with `--db-type`, `--db-user`, `--db-pwd`, `--db-host`, `--db-name` '
+            f'parameters, they will be stored to `{config.file_name}` as default connection values.'
+        )
     else:
-        main_parser.print_usage()
+        if args.db_update or config.is_db_config_empty():
+            ConfigController().update(args)
+
+        if func := getattr(args, 'func', None):
+            await func(args)
+        else:
+            main_parser.print_usage()
 
 
 if __name__ == '__main__':

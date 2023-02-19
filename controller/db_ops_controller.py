@@ -1,7 +1,11 @@
-import functools
+from typing import Type
 
 from yarl import URL
 
+from controller.types import (
+    SupportedActions,
+    SupportedDatabases,
+)
 from db import (
     BaseDatabase,
     PostgresDatabase,
@@ -16,7 +20,7 @@ from db.exceptions import (
 from db.utils import RecordSet
 from files_storage import (
     BaseFileWriter,
-    HTMLFileWriter
+    HTMLFileWriter,
 )
 
 
@@ -26,30 +30,31 @@ class DatabaseOperationsController:
     """
 
     file_controller: BaseFileWriter = HTMLFileWriter
-    # TODO(redd4ford): design a strategy to change DB
-    database: BaseDatabase = PostgresDatabase
 
-    @classmethod
-    def inject_db(cls, func):
-        @functools.wraps(func)
-        async def wrapper(*args):
-            connection_data = args[1].__dict__
-            db = cls.__get_db(
-                login=connection_data.get('db_user'),
-                pwd=connection_data.get('db_pwd'),
-                host=connection_data.get('db_host'),
-                db=connection_data.get('db_name')
-            )
-            await func(cls, db, args[1])
-        return wrapper
+    def __init__(self, db_type: str, login: str, pwd: str, host: str, db_name: str):
+        self.__dao_impl: Type[BaseDatabase] = self.__choose_dao_implementation(db_type)
+        self.db = self.__get_dao(login, pwd, host, db_name)
+        self.db_host = host
+        self.db_name = db_name
+        self.db_type = db_type
+        self.db_table = self.db.table.name
+        print(f'Initialized {self.db_type} `{self.db_name}` to work with table `{self.db_table}`.')
 
-    @classmethod
-    async def get(cls, login, pwd, host, db_name, url, n):
-        db = cls.__get_db(login, pwd, host, db_name)
+    async def run_action(self, action: str, silent: bool = False):
+        if action == SupportedActions.DROP:
+            await self.drop_table(silent)
+        elif action == SupportedActions.CREATE:
+            await self.create_table(silent)
+        elif action == SupportedActions.COUNT:
+            await self.count_all()
+        else:
+            print(f'Action `{action}` is not supported.')
+
+    async def get(self, url: str, n: int):
         try:
             parent = URL(url).human_repr()
 
-            fetched = await db.get(parent, limit=n)
+            fetched = await self.db.get(parent, limit=n)
 
             if fetched:
                 for record in RecordSet(fetched):
@@ -58,62 +63,66 @@ class DatabaseOperationsController:
                 print(f'No data found by parent={parent}')
 
         except DatabaseNotFoundError:
-            print(DatabaseNotFoundError(db_name, host))
+            print(DatabaseNotFoundError(self.db_name, self.db_host))
         except TableNotFoundError:
-            print(TableNotFoundError(db.table.name, db_name))
+            print(TableNotFoundError(self.db_table, self.db_name))
         except CredentialsError:
-            print(CredentialsError(host))
+            print(CredentialsError(self.db_host))
 
-    @classmethod
-    async def drop_table(cls, login, pwd, host, db_name, silent: bool = False) -> None:
-        db = cls.__get_db(login, pwd, host, db_name)
+    async def drop_table(self, silent: bool = False):
         try:
-            db.drop_table(silent=silent)
-            cls.file_controller.drop_all()
+            self.db.drop_table(silent=silent)
+            DatabaseOperationsController.file_controller.drop_all()
         except DatabaseNotFoundError:
-            print(DatabaseNotFoundError(db_name, host))
+            print(DatabaseNotFoundError(self.db_name, self.db_host))
         except TableNotFoundError:
-            print(TableNotFoundError(db.table.name, db_name))
+            print(TableNotFoundError(self.db_table, self.db_name))
         except DatabaseError as exc:
             print(exc.base_error)
         else:
             print(f'Table was dropped successfully.')
 
-    @classmethod
-    async def create_table(cls, login, pwd, host, db_name, silent: bool = False) -> None:
-        db = cls.__get_db(login, pwd, host, db_name)
+    async def create_table(self, silent: bool = False):
         try:
-            db.create_table(silent=silent)
+            self.db.create_table(silent=silent)
         except DatabaseNotFoundError:
-            print(DatabaseNotFoundError(db_name, host))
+            print(DatabaseNotFoundError(self.db_name, self.db_host))
         except TableAlreadyExists:
-            print(TableAlreadyExists(db.table.name, db_name))
+            print(TableAlreadyExists(self.db_table, self.db_name))
         except DatabaseError as exc:
             print(exc.base_error)
         else:
             print(f'Table was created successfully.')
 
-    @classmethod
-    async def count_all(cls, login, pwd, host, db_name) -> None:
-        db = cls.__get_db(login, pwd, host, db_name)
+    async def count_all(self):
         try:
-            await db.count_all()
+            counter = await self.db.count_all()
+            print(f'Found {counter} entries in the database.')
         except DatabaseNotFoundError:
-            print(DatabaseNotFoundError(db_name, host))
+            print(DatabaseNotFoundError(self.db_name, self.db_host))
         except TableNotFoundError:
-            print(TableNotFoundError(db.table.name, db_name))
+            print(TableNotFoundError(self.db_table, self.db_name))
         except CredentialsError:
-            print(CredentialsError(host))
+            print(CredentialsError(self.db_host))
 
-    @classmethod
-    def __get_db(cls, login, pwd, host, db) -> BaseDatabase:
+    def __get_dao(self, login: str, pwd: str, host: str, db: str) -> BaseDatabase:
         """
         Return object of subclass of BaseDatabase, represents DAO.
         """
-        db = cls.database(
+        db = self.__dao_impl(
             login=login,
             pwd=pwd,
             host=host,
             db=db,
         )
         return db
+
+    @classmethod
+    def __choose_dao_implementation(cls, dao: str) -> Type[BaseDatabase]:
+        if dao == SupportedDatabases.POSTGRESQL:
+            return PostgresDatabase
+        else:
+            print(
+                f'Database type `{dao}` is not supported. Using default from config.'
+            )
+            return PostgresDatabase
