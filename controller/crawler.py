@@ -9,6 +9,7 @@ import httpx
 from bs4 import BeautifulSoup
 from yarl import URL
 
+from controller.utils.loggers import logger
 from db import BaseDatabase
 from controller.utils.decorators import (
     log_time,
@@ -34,61 +35,59 @@ class Crawler:
         self.should_log_time = should_log_time
         self.should_use_cache = should_use_cache
 
+        self.successful_crawls_counter = 0
+        self.total_calls = 0
+
     @log_time
     async def crawl(self):
-        successful_crawls_counter = 0
-        total_calls = 0
-
-        @use_cache
-        async def load(url: URL, level: int):
-            nonlocal total_calls, successful_crawls_counter
-            total_calls += 1
-            try:
-                title, html_body, soup = await self.__load_and_parse(url)
-                successful_crawls_counter += 1
-            except TypeError:
-                if not self.silent:
-                    print(f'Cannot download URL: {url}.')
-                return
-
-            asyncio.ensure_future(
-                self.db.save(
-                    url, title, html_body, parent=self.url.human_repr(), silent=self.silent
-                ),
-                loop=asyncio.get_running_loop()
-            )
-
-            if level >= self.depth:
-                return
-
-            refs = self.__generate_refs(soup.findAll('a'))
-            todos = [load(ref, level + 1) for ref in refs]
-            await asyncio.gather(*todos)
-
         try:
             # trying to connect to db
             await self.db.connect()
             self.db.create_table(check_first=True, silent=True)
         except Exception as exc:
-            print(f'Database error: {exc}')
+            logger.error(f'Database error: {exc}')
             return
 
         try:
-            await load(self.url, 0)
+            await self.load(self.url, 0)
         finally:
             await self.client.aclose()
             await self.db.disconnect()
-            print(
-                f'Done.\n'
-                f'Crawled: {successful_crawls_counter}\n'
-                f'Total calls: {total_calls}')
+            logger.info(
+                f'Done. (crawled: {self.successful_crawls_counter}, total calls: {self.total_calls})'
+            )
+
+    @use_cache
+    async def load(self, url: URL, level: int):
+        self.total_calls += 1
+        try:
+            title, html_body, soup = await self.__load_and_parse(url)
+            self.successful_crawls_counter += 1
+        except TypeError:
+            if not self.silent:
+                logger.warning(f'Cannot download URL: {url}.')
+            return
+
+        asyncio.ensure_future(
+            self.db.save(
+                url, title, html_body, parent=self.url.human_repr(), silent=self.silent
+            ),
+            loop=asyncio.get_running_loop()
+        )
+
+        if level >= self.depth:
+            return
+
+        refs = self.__generate_refs(soup.findAll('a'))
+        todos = [self.load(ref, level + 1) for ref in refs]
+        await asyncio.gather(*todos)
 
     async def __load_and_parse(self, url: URL) -> Optional[Tuple[Optional[str], str, BeautifulSoup]]:
         try:
             response = await self.client.get(str(url))
         except httpx.HTTPError as exc:
             if not self.silent:
-                print(f'HTTP Exception for {exc.request.url}')
+                logger.warning(f'HTTP Exception for {exc.request.url}')
             return
         except ValueError:
             return

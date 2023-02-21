@@ -1,5 +1,7 @@
 import functools
 
+from controller.utils.loggers import logger
+
 
 def use_cache(func):
     """
@@ -8,18 +10,18 @@ def use_cache(func):
     cache = set()
 
     @functools.wraps(func)
-    async def wrapper(url, *args):
-        instance = args[0]
+    async def wrapper(*args):
+        instance, url, depth = args
         do = getattr(instance, 'should_use_cache', True)
         silent = getattr(instance, 'silent', False)
 
         if do:
             if url not in cache:
                 cache.add(url)
-                await func(url, *args)
+                await func(*args)
             else:
                 if not silent:
-                    print(f'Found {url} in cache. Skipping...')
+                    logger.warning(f'Found {url} in cache. Skipping...')
         else:
-            await func(url, *args)
+            await func(*args)
     return wrapper
