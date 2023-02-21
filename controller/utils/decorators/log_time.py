@@ -1,6 +1,8 @@
 import time
 import functools
 
+from controller.utils.loggers import logger
+
 
 def log_time(func):
     """
@@ -16,5 +18,5 @@ def log_time(func):
         finish_time = time.perf_counter()
 
         if do:
-            print(f'Elapsed time: {finish_time - start_time}')
+            logger.info(f'Elapsed time: {finish_time - start_time}')
     return wrapper

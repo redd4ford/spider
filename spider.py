@@ -13,6 +13,7 @@ from controller.types import (
     SupportedActions,
     SupportedDatabases,
 )
+from controller.utils.loggers import logger
 
 __app_name__ = 'spider'
 __version__ = '0.0.1'
@@ -90,7 +91,7 @@ async def main():
             args.db_name is None
         ]
     ):
-        print(
+        logger.warning(
             f'Cannot process your command without database login credentials. '
             f'`{config.file_name}` is empty, and you did not provide full connection details in your args.\n'
             f'The next time you run a command with `--db-type`, `--db-user`, `--db-pwd`, `--db-host`, `--db-name` '
@@ -99,6 +100,9 @@ async def main():
     else:
         if args.db_update or config.is_db_config_empty():
             ConfigController().update(args)
+
+        # TODO(redd4ford): change logging level if --silent is passed
+        #  implement a separate loglevel for Crawler and @log_time
 
         if func := getattr(args, 'func', None):
             await func(args)
@@ -111,5 +115,4 @@ if __name__ == '__main__':
         loop = asyncio.get_event_loop()
         loop.run_until_complete(main())
     except KeyboardInterrupt:
-        # TODO(redd4ford): implement proper logging
-        print('Exiting...')
+        logger.info('Exiting...')

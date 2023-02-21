@@ -14,6 +14,7 @@ from sqlalchemy.dialects.postgresql import insert
 import sqlalchemy.exc
 from yarl import URL
 
+from controller.utils.loggers import logger
 from db import BaseDatabase
 from db.utils import Singleton
 from db.exceptions import (
@@ -118,7 +119,7 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
                 await conn.execute(query)
 
             if not silent:
-                print(f'Save URL: {key}')
+                logger.dbinfo(f'Save URL: {key}')
         except asyncpg.exceptions.InvalidCatalogNameError:
             raise DatabaseNotFoundError
         except asyncpg.exceptions.UndefinedTableError:
@@ -164,7 +165,7 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
         if old_html:
             self.file_controller.delete(old_html)
             if not silent:
-                print(f'Overwrite file: {old_html}')
+                logger.dbinfo(f'Overwrite file: {old_html}')
 
         return await self.file_controller.write(url, content)
 

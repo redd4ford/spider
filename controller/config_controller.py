@@ -2,6 +2,8 @@ import configparser
 import os
 from typing import Optional
 
+from controller.utils.loggers import logger
+
 
 class ConfigController:
     """
@@ -13,7 +15,7 @@ class ConfigController:
     def __init__(self):
         if not os.path.exists(self.file_name):
             self.__create_db_section()
-            print(f'File `{self.file_name}` does not exist, creating it...')
+            logger.warning(f'File `{self.file_name}` does not exist, creating it...')
 
         self.config = configparser.ConfigParser()
         self.config.read('config.ini')
