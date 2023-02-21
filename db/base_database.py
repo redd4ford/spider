@@ -11,7 +11,7 @@ class BaseDatabase(abc.ABC):
     Base Database class to be used as parent for all Database subclasses.
     """
 
-    # TODO(redd4ford): implement DB operations for: Redis, MongoDB, MySQL, Elasticsearch
+    # TODO(redd4ford): implement DB operations for: MongoDB, MySQL, SQLite, Elasticsearch
 
     file_controller: BaseFileWriter = BaseFileWriter
     table: Table = None
@@ -34,7 +34,7 @@ class BaseDatabase(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def engine(self, sqlalchemy_logging: bool = True):
+    def engine(self, orm_logging: bool = True):
         pass
 
     @abc.abstractmethod
