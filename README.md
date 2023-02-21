@@ -68,11 +68,16 @@ If you wish to overwrite your config defaults (or just any specific value, e.g. 
 
 ## TODO
 
-- [ ] Implement DB operations for Redis, MongoDB, MySQL, Elasticsearch 
+- [ ] Implement proper logging - WIP
+- [ ] Implement DB operations for:
+  - [x] Redis, 
+  - [ ] MongoDB, 
+  - [ ] MySQL, 
+  - [ ] SQLite,
+  - [ ] Elasticsearch 
 - [ ] Implement `--no-overwrite (bool)` parameter in `crawl`
 - [ ] Implement parsing of different types of files (XML, CSS etc.)
 - [ ] Implement `--file-type (str in choices)` parameter in `crawl`
-- [ ] Implement proper logging
 - [ ] Turn this into a command-line tool with setup options (probably use Typer instead of argparse?)
 - [ ] Configure autocomplete 
 - [ ] Wrap this as a docker-compose
@@ -81,7 +86,7 @@ If you wish to overwrite your config defaults (or just any specific value, e.g. 
 
 - [x] Implement a record iterator to display the output for `get`
 - [x] Implement `--no-cache` and `--no-logtime` parameters for decorators
-- [x] Implement DB switch -- done this as a `--db-type` parameter, switched to configparser
+- [x] Implement DB switch - `--db-type` parameter + configparser
 
 ## Why?
 
