@@ -1,7 +1,7 @@
 import time
 import functools
 
-from controller.utils.loggers import logger
+from controller.core.loggers import logger
 
 
 def log_time(func):

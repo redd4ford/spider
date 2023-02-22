@@ -14,9 +14,11 @@ from sqlalchemy.dialects.postgresql import insert
 import sqlalchemy.exc
 from yarl import URL
 
-from controller.utils.loggers import logger
-from db import BaseDatabase
-from db.utils import Singleton
+from controller.core.loggers import logger
+from db.core import (
+    Singleton,
+    BaseDatabase,
+)
 from db.exceptions import (
     DatabaseNotFoundError,
     TableNotFoundError,
@@ -28,10 +30,8 @@ from db.schema import (
     urls_table,
     urls_unique_constraint,
 )
-from files_storage import (
-    BaseFileWriter,
-    HTMLFileWriter,
-)
+from file_storage.core import BaseFileWriter
+from file_storage.implementations import HTMLFileWriter
 
 
 class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):

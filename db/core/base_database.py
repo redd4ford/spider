@@ -3,7 +3,7 @@ from typing import Any
 
 from sqlalchemy import Table
 
-from files_storage import BaseFileWriter
+from file_storage.core import BaseFileWriter
 
 
 class BaseDatabase(abc.ABC):

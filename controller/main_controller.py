@@ -2,8 +2,8 @@ from controller import (
     Crawler,
     DatabaseOperationsController,
 )
-from controller.utils.context_managers import DelayedKeyboardInterrupt
-from controller.utils.loggers import logger
+from controller.core.context_managers import DelayedKeyboardInterrupt
+from controller.core.loggers import logger
 
 
 class MainController:

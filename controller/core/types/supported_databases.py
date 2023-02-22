@@ -1,4 +1,4 @@
-from controller.types.abstract_type import AbstractType
+from controller.core.types.abstract_type import AbstractType
 
 
 class SupportedDatabases(AbstractType):

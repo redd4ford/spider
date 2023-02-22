@@ -4,17 +4,17 @@ from typing import (
     Optional,
 )
 
+import bs4
 import httpx
-
 from bs4 import BeautifulSoup
 from yarl import URL
 
-from controller.utils.loggers import logger
-from db import BaseDatabase
-from controller.utils.decorators import (
+from controller.core.decorators import (
     log_time,
     use_cache,
 )
+from controller.core.loggers import logger
+from db.core import BaseDatabase
 
 
 class Crawler:
@@ -40,6 +40,9 @@ class Crawler:
 
     @log_time
     async def crawl(self):
+        """
+        Main crawling method. The whole procedure is recursive and is performed in load().
+        """
         try:
             # trying to connect to db
             await self.db.connect()
@@ -59,6 +62,10 @@ class Crawler:
 
     @use_cache
     async def load(self, url: URL, level: int):
+        """
+        Perform crawling procedure on the current :param level: and generate
+        deeper crawling tasks, if :param level: is less than the specified depth.
+        """
         self.total_calls += 1
         try:
             title, html_body, soup = await self.__load_and_parse(url)
@@ -82,6 +89,9 @@ class Crawler:
         await asyncio.gather(*todos)
 
     async def __load_and_parse(self, url: URL) -> Optional[Tuple[Optional[str], str, BeautifulSoup]]:
+        """
+        Async request of :param url: and response parsing.
+        """
         try:
             response = await self.client.get(str(url))
         except httpx.HTTPError as exc:
@@ -92,7 +102,10 @@ class Crawler:
 
         return self.__parsed(response)
 
-    def __generate_refs(self, bs_result_set):
+    def __generate_refs(self, bs_result_set: bs4.ResultSet):
+        """
+        Find hrefs in the current page to go deeper.
+        """
         for ref in bs_result_set:
             try:
                 href = URL(ref.attrs['href'])
@@ -108,6 +121,9 @@ class Crawler:
 
     @classmethod
     def __parsed(cls, response: httpx.Response) -> Tuple[Optional[str], str, BeautifulSoup]:
+        """
+        Extract html_body and title from the :param response:.
+        """
         # noinspection PyTypeChecker
         soup = BeautifulSoup(response, 'lxml')
 

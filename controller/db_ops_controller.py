@@ -2,13 +2,16 @@ from typing import Type
 
 from yarl import URL
 
-from controller.utils.loggers import logger
-from controller.types import (
+from controller.core.loggers import logger
+from controller.core.types import (
     SupportedActions,
     SupportedDatabases,
 )
-from db import (
+from db.core import (
     BaseDatabase,
+    RecordSet,
+)
+from db.implementations import (
     PostgresDatabase,
     RedisDatabase,
 )
@@ -19,11 +22,8 @@ from db.exceptions import (
     DatabaseError,
     CredentialsError,
 )
-from db.utils import RecordSet
-from files_storage import (
-    BaseFileWriter,
-    HTMLFileWriter,
-)
+from file_storage.core import BaseFileWriter
+from file_storage.implementations import HTMLFileWriter
 
 
 class DatabaseOperationsController:
@@ -43,6 +43,9 @@ class DatabaseOperationsController:
         logger.db_info(f'Initialized {self.db_type} `{self.db_name}` to work with table `{self.db_table}`.')
 
     async def run_action(self, action: str, silent: bool = False):
+        """
+        Map :param action: to a specific method.
+        """
         if action == SupportedActions.DROP:
             await self.drop_table(silent)
         elif action == SupportedActions.CREATE:
@@ -52,15 +55,19 @@ class DatabaseOperationsController:
         else:
             logger.error(f'Action `{action}` is not supported.')
 
-    async def get(self, url: str, n: int):
+    async def get(self, url: str, limit: int):
+        """
+        Call DAO to get all URLs from the DB by parent :param url:, then log them.
+        The number of values is limited by :param limit:.
+        """
         try:
             parent = URL(url).human_repr()
 
-            fetched = await self.db.get(parent, limit=n)
+            fetched = await self.db.get(parent, limit)
 
             if fetched:
-                for record in RecordSet(fetched):
-                    logger.info(f'{record.url} | {record.title}')
+                for counter, record in enumerate(RecordSet(fetched), start=1):
+                    logger.info(f'#{counter} {record.url} | {record.title}')
             else:
                 logger.info(f'No data found by parent={parent}')
 
@@ -72,6 +79,9 @@ class DatabaseOperationsController:
             logger.error(CredentialsError(self.db_host))
 
     async def drop_table(self, silent: bool = False):
+        """
+        Call DAO to drop the table.
+        """
         try:
             self.db.drop_table(silent=silent)
             DatabaseOperationsController.file_controller.drop_all()
@@ -85,6 +95,9 @@ class DatabaseOperationsController:
             logger.info(f'Table was dropped successfully.')
 
     async def create_table(self, silent: bool = False):
+        """
+        Call DAO to create the table.
+        """
         try:
             self.db.create_table(silent=silent)
         except DatabaseNotFoundError:
@@ -97,6 +110,10 @@ class DatabaseOperationsController:
             logger.info(f'Table was created successfully.')
 
     async def count_all(self):
+        """
+        Call DAO to retrieve the total number of entities stored in the DB,
+        then log the counter.
+        """
         try:
             counter = await self.db.count_all()
         except DatabaseNotFoundError:
@@ -122,6 +139,9 @@ class DatabaseOperationsController:
 
     @classmethod
     def __choose_dao_implementation(cls, dao: str) -> Type[BaseDatabase]:
+        """
+        Return type of subclass of BaseDatabase.
+        """
         if dao == SupportedDatabases.POSTGRESQL:
             return PostgresDatabase
         elif dao == SupportedDatabases.REDIS:

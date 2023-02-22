@@ -1,6 +1,6 @@
 import functools
 
-from controller.utils.loggers import logger
+from controller.core.loggers import logger
 
 
 def use_cache(func):

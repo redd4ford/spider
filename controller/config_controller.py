@@ -2,7 +2,7 @@ import configparser
 import os
 from typing import Optional
 
-from controller.utils.loggers import logger
+from controller.core.loggers import logger
 
 
 class ConfigController:

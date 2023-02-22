@@ -9,11 +9,11 @@ from controller import (
     MainController,
     ConfigController,
 )
-from controller.types import (
+from controller.core.types import (
     SupportedActions,
     SupportedDatabases,
 )
-from controller.utils.loggers import logger
+from controller.core.loggers import logger
 
 __app_name__ = 'spider'
 __version__ = '0.0.1'

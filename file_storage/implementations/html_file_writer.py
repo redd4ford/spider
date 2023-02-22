@@ -1,15 +1,15 @@
-import uuid
+import os
+from pathlib import Path
 from typing import Any
+import uuid
 
 from aiofile import (
     AIOFile,
     Writer,
 )
-from pathlib import Path
-import os
 from yarl import URL
 
-from files_storage import BaseFileWriter
+from file_storage.core import BaseFileWriter
 
 
 class HTMLFileWriter(BaseFileWriter):

@@ -3,14 +3,14 @@ from typing import Any
 import aioredis
 from sqlalchemy import Table
 
-from controller.utils.loggers import logger
-from db import BaseDatabase
+from controller.core.loggers import logger
 from db.schema import urls_table
-from db.utils import Singleton
-from files_storage import (
-    BaseFileWriter,
-    HTMLFileWriter,
+from db.core import (
+    Singleton,
+    BaseDatabase,
 )
+from file_storage.core import BaseFileWriter
+from file_storage.implementations import HTMLFileWriter
 
 
 class RedisDatabase(BaseDatabase, metaclass=type(Singleton)):
