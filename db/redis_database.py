@@ -33,12 +33,16 @@ class RedisDatabase(BaseDatabase, metaclass=type(Singleton)):
         """
         Initiate database connection.
         """
-        self.__redis = await aioredis.create_redis_pool(
-            self.__conn_string,
-            minsize=5,
-            maxsize=10
-        )
-        await self.__redis.select(1)
+        if not self.is_initialized:
+            self.__redis: aioredis.commands.Redis = (
+                await aioredis.create_redis_pool(
+                    self.__conn_string,
+                    minsize=5,
+                    maxsize=10
+                )
+            )
+            self.is_initialized = True
+            await self.__redis.select(1)
 
     async def disconnect(self):
         """
@@ -107,8 +111,7 @@ class RedisDatabase(BaseDatabase, metaclass=type(Singleton)):
 
         if old_html:
             self.file_controller.delete(old_html)
-            if not silent:
-                logger.dbinfo(f'Overwrite file: {old_html}')
+            logger.crawl_info(f'Overwrite file: {old_html}')
 
         return await self.file_controller.write(key, content)
 
@@ -121,6 +124,6 @@ class RedisDatabase(BaseDatabase, metaclass=type(Singleton)):
 
     def create_table(self, check_first: bool = False, silent: bool = False):
         """
-        CREATE TABLE operation. :param silent: is used to remove logging from an ORM.
+        Tables do not exist in Redis, so this method is empty.
         """
         pass
