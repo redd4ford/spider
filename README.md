@@ -68,7 +68,6 @@ If you wish to overwrite your config defaults (or just any specific value, e.g. 
 
 ## TODO
 
-- [ ] Implement proper logging - WIP
 - [ ] Implement DB operations for:
   - [x] Redis, 
   - [ ] MongoDB, 
@@ -87,6 +86,7 @@ If you wish to overwrite your config defaults (or just any specific value, e.g. 
 - [x] Implement a record iterator to display the output for `get`
 - [x] Implement `--no-cache` and `--no-logtime` parameters for decorators
 - [x] Implement DB switch - `--db-type` parameter + configparser
+- [x] Implement proper logging
 
 ## Why?
 

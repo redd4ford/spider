@@ -101,9 +101,6 @@ async def main():
         if args.db_update or config.is_db_config_empty():
             ConfigController().update(args)
 
-        # TODO(redd4ford): change logging level if --silent is passed
-        #  implement a separate loglevel for Crawler and @log_time
-
         if func := getattr(args, 'func', None):
             await func(args)
         else:
