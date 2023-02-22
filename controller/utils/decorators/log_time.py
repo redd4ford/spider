@@ -18,5 +18,5 @@ def log_time(func):
         finish_time = time.perf_counter()
 
         if do:
-            logger.info(f'Elapsed time: {finish_time - start_time}')
+            logger.crawl_ok(f'Elapsed time: {finish_time - start_time}')
     return wrapper

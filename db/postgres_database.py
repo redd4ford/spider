@@ -118,8 +118,7 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
 
                 await conn.execute(query)
 
-            if not silent:
-                logger.dbinfo(f'Save URL: {key}')
+            logger.crawl_info(f'Save URL: {key}')
         except asyncpg.exceptions.InvalidCatalogNameError:
             raise DatabaseNotFoundError
         except asyncpg.exceptions.UndefinedTableError:
@@ -164,8 +163,7 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
 
         if old_html:
             self.file_controller.delete(old_html)
-            if not silent:
-                logger.dbinfo(f'Overwrite file: {old_html}')
+            logger.crawl_info(f'Overwrite file: {old_html}')
 
         return await self.file_controller.write(url, content)
 

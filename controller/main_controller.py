@@ -3,6 +3,7 @@ from controller import (
     DatabaseOperationsController,
 )
 from controller.utils.context_managers import DelayedKeyboardInterrupt
+from controller.utils.loggers import logger
 
 
 class MainController:
@@ -51,6 +52,8 @@ class MainController:
             args.url, args.depth, args.silent, args.log_time, args.cache
         )
 
+        logger.update_level(args.silent, operation='crawl')
+
         spider = Crawler(
             DatabaseOperationsController(*db_login_args).db,
             *crawl_args
@@ -69,6 +72,8 @@ class MainController:
         db_login_args = (
             args.db_type, args.db_user, args.db_pwd, args.db_host, args.db_name
         )
+
+        logger.update_level(args.silent, operation='db')
 
         await (
             DatabaseOperationsController(*db_login_args)

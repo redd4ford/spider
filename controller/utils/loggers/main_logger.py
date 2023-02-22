@@ -7,16 +7,75 @@ class CustomLogger(logging.getLoggerClass()):
     """
 
     class Levels:
-        DBINFO = 5
+        """
+        Level hierarchy from :package logging: is commented out
+        to understand where custom levels are located at.
+        """
+        # DEBUG: 10
+        DB_INFO = 11
+        CRAWL_ONGOING_INFO = 13
+        CRAWL_SUCCESS = 15
+        # here can go a few more levels...
+        # INFO: 20
+        # WARNING, WARN: 30
+        # ERROR: 40
+        # CRITICAL, FATAL: 50
 
     def __init__(self, name, level: int = logging.NOTSET):
         super().__init__(name, level)
 
-        logging.addLevelName(5, "DBINFO")
+        logging.addLevelName(CustomLogger.Levels.DB_INFO, "DB_INFO")
+        logging.addLevelName(CustomLogger.Levels.CRAWL_ONGOING_INFO, "CRAWL_INFO")
+        logging.addLevelName(CustomLogger.Levels.CRAWL_SUCCESS, "CRAWL_SUCCESS")
 
-    def dbinfo(self, message: str, *args, **kwargs):
-        if self.isEnabledFor(CustomLogger.Levels.DBINFO):
-            self._log(CustomLogger.Levels.DBINFO, message, args, **kwargs)
+    def db_info(self, message: str, *args, **kwargs):
+        level = CustomLogger.Levels.DB_INFO
+
+        if self.isEnabledFor(level):
+            self._log(level, message, args, **kwargs)
+
+    def crawl_info(self, message: str, *args, **kwargs):
+        level = CustomLogger.Levels.CRAWL_ONGOING_INFO
+
+        if self.isEnabledFor(level):
+            self._log(level, message, args, **kwargs)
+
+    def crawl_ok(self, message: str, *args, **kwargs):
+        level = CustomLogger.Levels.CRAWL_SUCCESS
+
+        if self.isEnabledFor(level):
+            self._log(level, message, args, **kwargs)
+
+    def update_level(self, silent: bool, operation: str):
+        log_level = 0
+        if operation == 'crawl':
+            log_level = self.get_level_for_crawl(silent)
+        elif operation == 'db':
+            log_level = self.get_level_for_db(silent)
+        self.setLevel(log_level)
+        self.__update_handlers_level(log_level)
+
+    @classmethod
+    def get_level_for_crawl(cls, silent: bool) -> int:
+        return (
+            CustomLogger.Levels.CRAWL_SUCCESS
+            if silent
+            else
+            CustomLogger.Levels.CRAWL_ONGOING_INFO
+        )
+
+    @classmethod
+    def get_level_for_db(cls, silent: bool) -> int:
+        return (
+            logging.INFO
+            if silent
+            else
+            CustomLogger.Levels.DB_INFO
+        )
+
+    def __update_handlers_level(self, log_level: int):
+        for one_handler in self.handlers:
+            one_handler.setLevel(log_level)
 
 
 logging.setLoggerClass(CustomLogger)
@@ -38,11 +97,13 @@ class CustomFormatter(logging.Formatter):
 
     FORMATS = {
         logging.DEBUG: GREY + FORMAT + NO_COLOR,
+        CustomLogger.Levels.DB_INFO: CYAN + FORMAT + NO_COLOR,
+        CustomLogger.Levels.CRAWL_ONGOING_INFO: YELLOW + FORMAT + NO_COLOR,
+        CustomLogger.Levels.CRAWL_SUCCESS: GREEN + FORMAT + NO_COLOR,
         logging.INFO: GREY + FORMAT + NO_COLOR,
         logging.WARNING: YELLOW + FORMAT + NO_COLOR,
         logging.ERROR: RED + FORMAT + NO_COLOR,
         logging.CRITICAL: BOLD_RED + FORMAT + NO_COLOR,
-        CustomLogger.Levels.DBINFO: CYAN + FORMAT + NO_COLOR,
     }
 
     def format(self, record):
@@ -52,10 +113,10 @@ class CustomFormatter(logging.Formatter):
 
 
 logger = logging.getLogger('spider')
-logger.setLevel(CustomLogger.Levels.DBINFO)
+logger.setLevel(CustomLogger.Levels.DB_INFO)
 
 ch = logging.StreamHandler()
-ch.setLevel(CustomLogger.Levels.DBINFO)
+ch.setLevel(CustomLogger.Levels.DB_INFO)
 
 ch.setFormatter(CustomFormatter())
 

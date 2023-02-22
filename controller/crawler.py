@@ -19,7 +19,7 @@ from controller.utils.decorators import (
 
 class Crawler:
     """
-    Performs crawling of a url with specified depth.
+    Performs crawling of a URL with specified depth.
     """
 
     def __init__(
@@ -53,7 +53,7 @@ class Crawler:
         finally:
             await self.client.aclose()
             await self.db.disconnect()
-            logger.info(
+            logger.crawl_ok(
                 f'Done. (crawled: {self.successful_crawls_counter}, total calls: {self.total_calls})'
             )
 
@@ -64,8 +64,7 @@ class Crawler:
             title, html_body, soup = await self.__load_and_parse(url)
             self.successful_crawls_counter += 1
         except TypeError:
-            if not self.silent:
-                logger.warning(f'Cannot download URL: {url}.')
+            logger.crawl_info(f'Cannot download URL: {url}.')
             return
 
         asyncio.ensure_future(
@@ -86,8 +85,7 @@ class Crawler:
         try:
             response = await self.client.get(str(url))
         except httpx.HTTPError as exc:
-            if not self.silent:
-                logger.warning(f'HTTP Exception for {exc.request.url}')
+            logger.crawl_info(f'HTTP Exception for {exc.request.url}')
             return
         except ValueError:
             return

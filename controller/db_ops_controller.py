@@ -40,7 +40,7 @@ class DatabaseOperationsController:
         self.db_name = db_name
         self.db_type = db_type
         self.db_table = self.db.table.name
-        logger.info(f'Initialized {self.db_type} `{self.db_name}` to work with table `{self.db_table}`.')
+        logger.db_info(f'Initialized {self.db_type} `{self.db_name}` to work with table `{self.db_table}`.')
 
     async def run_action(self, action: str, silent: bool = False):
         if action == SupportedActions.DROP:
