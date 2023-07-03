@@ -83,7 +83,7 @@ class DatabaseOperationsController:
         Call DAO to drop the table.
         """
         try:
-            self.db.drop_table(silent=silent)
+            await self.db.drop_table(silent=silent)
             DatabaseOperationsController.file_controller.drop_all()
         except DatabaseNotFoundError:
             logger.error(DatabaseNotFoundError(self.db_name, self.db_host))

@@ -3,4 +3,4 @@ type = postgresql/mysql/sqlite/mongodb/redis
 username = user
 password = pwd
 host = URL:PORT
-name = spider
+name = spider ; for Redis, use a digit (0-15)

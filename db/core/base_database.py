@@ -70,7 +70,7 @@ class BaseDatabase(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def drop_table(self, check_first: bool = False, silent: bool = False):
+    async def drop_table(self, check_first: bool = False, silent: bool = False):
         """
         DROP TABLE operation. :param silent: is used to remove logging from an ORM.
         """

@@ -189,7 +189,7 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
             await pg.pool.close()
         return result[0].get('count_1', 0)
 
-    def drop_table(self, check_first: bool = False, silent: bool = False):
+    async def drop_table(self, check_first: bool = False, silent: bool = False):
         """
         Drop the table.
         """

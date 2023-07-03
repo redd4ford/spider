@@ -24,7 +24,9 @@ class RedisDatabase(BaseDatabase, metaclass=type(Singleton)):
 
     def __init__(self, host: str, login: str, pwd: str, db: str, driver: str = default_driver):
         super().__init__(host, login, pwd, db, driver)
-        self.__conn_string = f'{driver}://{login}:{pwd}@{host}'
+        if not db.isdigit():
+            logger.error('DB name for a redis database should be a digit (0-15)')
+        self.__conn_string = f'{driver}://{host}/{db}'
 
         self.__redis = None
         self.is_initialized = False
@@ -42,7 +44,6 @@ class RedisDatabase(BaseDatabase, metaclass=type(Singleton)):
                 )
             )
             self.is_initialized = True
-            await self.__redis.select(1)
 
     async def disconnect(self):
         """
@@ -58,20 +59,26 @@ class RedisDatabase(BaseDatabase, metaclass=type(Singleton)):
         """
         Save an entry to the DB.
         """
-        if self.__redis.hgetall(key) is not None:
-            await self.__redis.hmset(
-                key,
+        if name is None:
+            return
+
+        await self.connect()
+        if await self.__redis.hgetall(str(key)) is not None:
+            html = await self.update(key, content, None, silent)
+            await self.__redis.hmset_dict(
+                str(key),
                 {
                     'title': name,
-                    'html': await self.update(key, content, None, silent),
+                    'html': html,
                 }
             )
         else:
-            await self.__redis.hset(
-                key,
+            html = await self.file_controller.write(key, content)
+            await self.__redis.hmset_dict(
+                str(key),
                 {
                     'title': name,
-                    'html': await self.file_controller.write(key, content),
+                    'html': html,
                     'parent': parent,
                 }
             )
@@ -81,44 +88,61 @@ class RedisDatabase(BaseDatabase, metaclass=type(Singleton)):
         Select all DB entries where parent link equals :param parent:.
         The number of entries to get can be limited by :param limit:.
         """
+        await self.connect()
         keys = []
-        async for key in self.__redis.scan(match=f'*{parent}*'):
-            keys.append(key)
+        cur = b'0'
+        while cur:
+            cur, key = await self.__redis.scan(cur, match=f'*{parent}*')
+            if key:
+                keys.append(key)
             if len(keys) == limit:
                 break
 
-        values = await self.__redis.hmget(*keys, 'title')
-
         data = {}
-        for key, value in zip(keys, values):
-            data[key] = value
+        if keys:
+            values = await self.__redis.hmget(*keys, 'title')
+            for key, value in zip(keys, values):
+                data[key] = value.decode('utf-8')
+        await self.disconnect()
         return data
 
     async def count_all(self) -> int:
         """
         Count all entries in the DB.
         """
+        await self.connect()
+        cur = b'0'
         counter = 0
-        async for _ in self.__redis.scan_iter():
-            counter += 1
+        while cur:
+            cur, record = await self.__redis.scan(cur, match='*')
+            if record:
+                counter += 1
+        await self.disconnect()
         return counter
 
     async def update(self, key: Any, content: str, connection, silent: bool) -> str:
         """
         Delete HTML file and store a new one if URL was previously crawled.
         """
-        old_html = await self.__redis.hget(key, 'html')
+        await self.connect()
+        old_html = await self.__redis.hmget(str(key), 'html')
+        if len(old_html) == 1 and old_html[0] is not None:
+            old_html = old_html[0].decode('utf-8')
+        else:
+            old_html = None
 
-        if old_html:
+        if old_html is not None:
             self.file_controller.delete(old_html)
             logger.crawl_info(f'Overwrite file: {old_html}')
 
-        return await self.file_controller.write(key, content)
+        file_path = await self.file_controller.write(key, content)
+        return file_path
 
     async def drop_table(self, check_first: bool = False, silent: bool = False):
         """
         DROP TABLE operation.
         """
+        await self.connect()
         await self.__redis.flushdb()
         await self.disconnect()
 

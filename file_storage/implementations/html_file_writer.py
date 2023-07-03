@@ -18,7 +18,7 @@ class HTMLFileWriter(BaseFileWriter):
     """
 
     FOLDER_NAME = 'html_files'
-    PATH_TO_FILES = Path(__file__).parent.absolute().joinpath(FOLDER_NAME)
+    PATH_TO_FILES = Path(__file__).parent.parent.absolute().joinpath(FOLDER_NAME)
 
     @classmethod
     async def write(cls, url: URL, html: str) -> str:
