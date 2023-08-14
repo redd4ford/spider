@@ -39,6 +39,7 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
     PostgreSQL DAO, async implementation.
     """
 
+    verbose = 'postgresql'
     default_driver: str = 'postgresql'
     file_controller: BaseFileWriter = HTMLFileWriter
     table: Table = urls_table
@@ -146,9 +147,7 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
                     .limit(limit)
                 )
 
-                d = await conn.fetch(query)
-                print(type(d))
-                return d
+                return await conn.fetch(query)
         except asyncpg.exceptions.InvalidCatalogNameError:
             raise DatabaseNotFoundError(self.__db_name, self.__db_host)
         except asyncpg.exceptions.UndefinedTableError:

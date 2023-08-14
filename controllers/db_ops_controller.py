@@ -1,12 +1,8 @@
-from typing import Type
-
 from yarl import URL
 
 from controllers.core.loggers import logger
-from controllers.core.types import (
-    SupportedActions,
-    SupportedDatabases,
-)
+from controllers.core.types import SupportedActions
+from db.manager import DatabaseManager
 from db.core import (
     BaseDatabase,
     RecordSet,
@@ -17,10 +13,6 @@ from db.exceptions import (
     DatabaseNotFoundError,
     TableAlreadyExists,
     TableNotFoundError,
-)
-from db.implementations import (
-    PostgresDatabase,
-    RedisDatabase,
 )
 from file_storage.core import BaseFileWriter
 from file_storage.implementations import HTMLFileWriter
@@ -34,15 +26,11 @@ class DatabaseOperationsController:
     file_controller: BaseFileWriter = HTMLFileWriter
 
     def __init__(self, db_type: str, login: str, pwd: str, host: str, db_name: str):
-        self.__dao_impl: Type[BaseDatabase] = self.__choose_dao_implementation(db_type)
-        self.db = self.__get_dao(login, pwd, host, db_name)
-        self.db_host = host
-        self.db_name = db_name
-        self.db_type = db_type
-        self.db_table = self.db.table.name
+        self._database_manager = DatabaseManager()
+        self.db: BaseDatabase = self.__get_dao(db_type, login, pwd, host, db_name)
         logger.db_info(
-            f'Initialized {self.db_type} `{self.db_name}` to work with '
-            f'table `{self.db_table}`.'
+            f'Initialized {db_type} `{db_name}` to work with '
+            f'table `{self.db.table.name}`.'
         )
 
     async def run_action(self, action: str, silent: bool = False):
@@ -109,24 +97,16 @@ class DatabaseOperationsController:
         else:
             logger.info(f'Found {counter} entries in the database.')
 
-    def __get_dao(self, login: str, pwd: str, host: str, db: str) -> BaseDatabase:
+    def __get_dao(
+        self, db_type: str, login: str, pwd: str, host: str, db_name: str
+    ) -> BaseDatabase:
         """
         Return object of subclass of BaseDatabase, represents DAO.
         """
-        db = self.__dao_impl(login, pwd, host, db)
-        return db
-
-    @classmethod
-    def __choose_dao_implementation(cls, dao: str) -> Type[BaseDatabase]:
-        """
-        Return type of subclass of BaseDatabase.
-        """
-        if dao == SupportedDatabases.POSTGRESQL:
-            return PostgresDatabase
-        elif dao == SupportedDatabases.REDIS:
-            return RedisDatabase
-        else:
+        dao = self._database_manager.get_database(database_type=db_type)
+        if not dao:
             logger.warning(
-                f'Database type `{dao}` is not supported. Using default from config.'
+                f'Database type `{db_type}` is not supported. Using default from config.'
             )
-            return PostgresDatabase
+            dao = self._database_manager.default_database
+        return dao(login, pwd, host, db_name)

@@ -11,8 +11,7 @@ class BaseDatabase(abc.ABC):
     Base Database class to be used as parent for all Database subclasses.
     """
 
-    # TODO(redd4ford): implement DB operations for: MySQL, SQLite, Elasticsearch
-
+    verbose = 'OVERRIDE_THIS'
     file_controller: BaseFileWriter = BaseFileWriter
     table: Table = None
 

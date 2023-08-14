@@ -21,6 +21,7 @@ class RedisDatabase(BaseDatabase, metaclass=type(Singleton)):
 
     # TODO(redd4ford): handle exceptions
 
+    verbose = 'redis'
     default_driver: str = 'redis'
     table: Table = urls_table
     file_controller: BaseFileWriter = HTMLFileWriter

@@ -10,10 +10,7 @@ from controllers import (
     ConfigController,
 )
 from controllers.core.loggers import logger
-from controllers.core.types import (
-    SupportedActions,
-    SupportedDatabases,
-)
+from controllers.core.types import SupportedActions
 
 __app_name__ = 'spider'
 __version__ = '0.0.1'
@@ -44,8 +41,8 @@ async def main():
         '--db-name', required=False, default=config.get_db_config('name')
     )
     main_parser.add_argument(
-        '--db-type', required=False, choices=SupportedDatabases.all(),
-        default=config.get_db_config('type')
+        '--db-type', required=False, default=config.get_db_config('type'),
+        choices=config.database_manager.choices,
     )
     main_parser.add_argument(
         '--db-update', action='store_true', default=False,

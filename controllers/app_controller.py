@@ -21,7 +21,8 @@ class AppController:
                 limit the number of DB entries returned (:param args.n:).
         """
         db_login_args = (
-            args.db_type, args.db_user, args.db_pwd, args.db_host, args.db_name
+            args.db_type.lower().strip(), args.db_user, args.db_pwd, args.db_host,
+            args.db_name
         )
         get_args = (args.url, args.n)
 
@@ -45,7 +46,8 @@ class AppController:
                     etc.
         """
         db_login_args = (
-            args.db_type, args.db_user, args.db_pwd, args.db_host, args.db_name
+            args.db_type.lower().strip(), args.db_user, args.db_pwd, args.db_host,
+            args.db_name
         )
 
         crawl_args = (
@@ -71,7 +73,8 @@ class AppController:
                 the exact action (:param args.action:), and perform DB connection.
         """
         db_login_args = (
-            args.db_type, args.db_user, args.db_pwd, args.db_host, args.db_name
+            args.db_type.lower().strip(), args.db_user, args.db_pwd, args.db_host,
+            args.db_name
         )
 
         logger.update_level(args.silent, operation='db')
