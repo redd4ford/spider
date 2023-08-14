@@ -1,7 +1,7 @@
-from controller.core.types.abstract_type import AbstractType
+from controllers.core.types.abstract_types import AbstractEnumType
 
 
-class SupportedDatabases(AbstractType):
+class SupportedDatabases(AbstractEnumType):
     """
     Supported database implementations for `--db-type` argument.
     """

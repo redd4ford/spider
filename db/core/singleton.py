@@ -1,6 +1,6 @@
 class Singleton(type):
     """
-    Singleton as metaclass implementation.
+    Implementation of Singleton as a metaclass.
     """
 
     _instances = {}

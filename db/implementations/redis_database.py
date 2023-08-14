@@ -1,9 +1,10 @@
-from typing import Any
+from typing import Dict
 
 import aioredis
 from sqlalchemy import Table
+from yarl import URL
 
-from controller.core.loggers import logger
+from controllers.core.loggers import logger
 from db.schema import urls_table
 from db.core import (
     Singleton,
@@ -18,14 +19,18 @@ class RedisDatabase(BaseDatabase, metaclass=type(Singleton)):
     Redis DAO, async implementation.
     """
 
+    # TODO(redd4ford): handle exceptions
+
     default_driver: str = 'redis'
     table: Table = urls_table
     file_controller: BaseFileWriter = HTMLFileWriter
 
-    def __init__(self, host: str, login: str, pwd: str, db: str, driver: str = default_driver):
+    def __init__(
+        self, host: str, login: str, pwd: str, db: str, driver: str = default_driver
+    ):
         super().__init__(host, login, pwd, db, driver)
         if not db.isdigit():
-            logger.error('DB name for a redis database should be a digit (0-15)')
+            logger.error('DB name for a Redis database should be a digit (0-15)')
         self.__conn_string = f'{driver}://{host}/{db}'
 
         self.__redis = None
@@ -55,7 +60,9 @@ class RedisDatabase(BaseDatabase, metaclass=type(Singleton)):
     def engine(self, orm_logging: bool = True):
         return self.__redis
 
-    async def save(self, key: Any, name: str, content: str, parent: str, silent: bool = False):
+    async def save(
+        self, key: URL, name: str, content: str, parent: str, silent: bool = False
+    ):
         """
         Save an entry to the DB.
         """
@@ -83,7 +90,7 @@ class RedisDatabase(BaseDatabase, metaclass=type(Singleton)):
                 }
             )
 
-    async def get(self, parent: str, limit: int = 10) -> dict:
+    async def get(self, parent: str, limit: int = 10) -> Dict:
         """
         Select all DB entries where parent link equals :param parent:.
         The number of entries to get can be limited by :param limit:.
@@ -120,18 +127,15 @@ class RedisDatabase(BaseDatabase, metaclass=type(Singleton)):
         await self.disconnect()
         return counter
 
-    async def update(self, key: Any, content: str, connection, silent: bool) -> str:
+    async def update(self, key: URL, content: str, connection, silent: bool) -> str:
         """
         Delete HTML file and store a new one if URL was previously crawled.
         """
         await self.connect()
         old_html = await self.__redis.hmget(str(key), 'html')
-        if len(old_html) == 1 and old_html[0] is not None:
+        if len(old_html) == 1 and old_html[0]:
             old_html = old_html[0].decode('utf-8')
-        else:
-            old_html = None
 
-        if old_html is not None:
             self.file_controller.delete(old_html)
             logger.crawl_info(f'Overwrite file: {old_html}')
 

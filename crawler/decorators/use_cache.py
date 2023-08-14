@@ -1,11 +1,11 @@
 import functools
 
-from controller.core.loggers import logger
+from controllers.core.loggers import logger
 
 
 def use_cache(func):
     """
-    Skip already crawled URLs to prevent DB override operations.
+    Skip already crawled URLs to prevent DB overrides during current crawling operation.
     """
     cache = set()
 

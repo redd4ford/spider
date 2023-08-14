@@ -2,7 +2,7 @@ import abc
 from typing import Tuple
 
 
-class AbstractType(abc.ABC):
+class AbstractEnumType(abc.ABC):
     @classmethod
     def all(cls) -> Tuple:
         """

@@ -1,8 +1,9 @@
-import configparser
+from argparse import Namespace
+from configparser import ConfigParser
 import os
 from typing import Optional
 
-from controller.core.loggers import logger
+from controllers.core.loggers import logger
 
 
 class ConfigController:
@@ -17,7 +18,7 @@ class ConfigController:
             self.__create_db_section()
             logger.warning(f'File `{self.file_name}` does not exist, creating it...')
 
-        self.config = configparser.ConfigParser()
+        self.config = ConfigParser()
         self.config.read('config.ini')
         self.db_config = self.config['DATABASE']
 
@@ -46,9 +47,11 @@ class ConfigController:
         """
         return len(self.db_config.values()) == 0
 
-    def update(self, args):
+    def update(self, args: Namespace):
         """
         Update the default DB login credentials.
+        Args:
+            :param args: (Namespace) - A set of args used to perform DB connection.
         """
         db_login_args = {
             'type': args.db_type,

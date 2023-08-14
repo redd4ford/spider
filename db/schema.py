@@ -1,10 +1,10 @@
 from sqlalchemy import (
-    MetaData,
-    Table,
     Column,
     Integer,
+    MetaData,
     String,
-    Text
+    Table,
+    Text,
 )
 
 

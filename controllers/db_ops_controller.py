@@ -2,8 +2,8 @@ from typing import Type
 
 from yarl import URL
 
-from controller.core.loggers import logger
-from controller.core.types import (
+from controllers.core.loggers import logger
+from controllers.core.types import (
     SupportedActions,
     SupportedDatabases,
 )
@@ -11,16 +11,16 @@ from db.core import (
     BaseDatabase,
     RecordSet,
 )
+from db.exceptions import (
+    CredentialsError,
+    DatabaseError,
+    DatabaseNotFoundError,
+    TableAlreadyExists,
+    TableNotFoundError,
+)
 from db.implementations import (
     PostgresDatabase,
     RedisDatabase,
-)
-from db.exceptions import (
-    DatabaseNotFoundError,
-    TableNotFoundError,
-    TableAlreadyExists,
-    DatabaseError,
-    CredentialsError,
 )
 from file_storage.core import BaseFileWriter
 from file_storage.implementations import HTMLFileWriter
@@ -40,7 +40,10 @@ class DatabaseOperationsController:
         self.db_name = db_name
         self.db_type = db_type
         self.db_table = self.db.table.name
-        logger.db_info(f'Initialized {self.db_type} `{self.db_name}` to work with table `{self.db_table}`.')
+        logger.db_info(
+            f'Initialized {self.db_type} `{self.db_name}` to work with '
+            f'table `{self.db_table}`.'
+        )
 
     async def run_action(self, action: str, silent: bool = False):
         """
@@ -62,21 +65,14 @@ class DatabaseOperationsController:
         """
         try:
             parent = URL(url).human_repr()
-
             fetched = await self.db.get(parent, limit)
-
             if fetched:
                 for counter, record in enumerate(RecordSet(fetched), start=1):
                     logger.info(f'#{counter} {record.url} | {record.title}')
             else:
                 logger.info(f'No data found by parent={parent}')
-
-        except DatabaseNotFoundError:
-            logger.error(DatabaseNotFoundError(self.db_name, self.db_host))
-        except TableNotFoundError:
-            logger.error(TableNotFoundError(self.db_table, self.db_name))
-        except CredentialsError:
-            logger.error(CredentialsError(self.db_host))
+        except (CredentialsError, DatabaseNotFoundError, TableNotFoundError) as exc:
+            logger.error(exc)
 
     async def drop_table(self, silent: bool = False):
         """
@@ -85,14 +81,10 @@ class DatabaseOperationsController:
         try:
             await self.db.drop_table(silent=silent)
             DatabaseOperationsController.file_controller.drop_all()
-        except DatabaseNotFoundError:
-            logger.error(DatabaseNotFoundError(self.db_name, self.db_host))
-        except TableNotFoundError:
-            logger.error(TableNotFoundError(self.db_table, self.db_name))
-        except DatabaseError as exc:
-            logger.error(exc.base_error)
+        except (DatabaseNotFoundError, TableNotFoundError, DatabaseError) as exc:
+            logger.error(exc)
         else:
-            logger.info(f'Table was dropped successfully.')
+            logger.info('Table was dropped successfully.')
 
     async def create_table(self, silent: bool = False):
         """
@@ -100,14 +92,10 @@ class DatabaseOperationsController:
         """
         try:
             self.db.create_table(silent=silent)
-        except DatabaseNotFoundError:
-            logger.error(DatabaseNotFoundError(self.db_name, self.db_host))
-        except TableAlreadyExists:
-            logger.error(TableAlreadyExists(self.db_table, self.db_name))
-        except DatabaseError as exc:
-            logger.error(exc.base_error)
+        except (DatabaseNotFoundError, TableAlreadyExists, DatabaseError) as exc:
+            logger.error(exc)
         else:
-            logger.info(f'Table was created successfully.')
+            logger.info('Table was created successfully.')
 
     async def count_all(self):
         """
@@ -116,12 +104,8 @@ class DatabaseOperationsController:
         """
         try:
             counter = await self.db.count_all()
-        except DatabaseNotFoundError:
-            logger.error(DatabaseNotFoundError(self.db_name, self.db_host))
-        except TableNotFoundError:
-            logger.error(TableNotFoundError(self.db_table, self.db_name))
-        except CredentialsError:
-            logger.error(CredentialsError(self.db_host))
+        except (CredentialsError, DatabaseNotFoundError, TableNotFoundError) as exc:
+            logger.error(exc)
         else:
             logger.info(f'Found {counter} entries in the database.')
 
@@ -129,12 +113,7 @@ class DatabaseOperationsController:
         """
         Return object of subclass of BaseDatabase, represents DAO.
         """
-        db = self.__dao_impl(
-            login=login,
-            pwd=pwd,
-            host=host,
-            db=db,
-        )
+        db = self.__dao_impl(login, pwd, host, db)
         return db
 
     @classmethod

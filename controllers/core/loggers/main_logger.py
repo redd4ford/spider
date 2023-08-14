@@ -11,15 +11,15 @@ class CustomLogger(logging.getLoggerClass()):
         Level hierarchy from :package logging: is commented out
         to understand where custom levels are located at.
         """
-        # DEBUG: 10
+        # logging.DEBUG: 10
         DB_INFO = 11
         CRAWL_ONGOING_INFO = 13
         CRAWL_SUCCESS = 15
-        # here can go a few more levels...
-        # INFO: 20
-        # WARNING, WARN: 30
-        # ERROR: 40
-        # CRITICAL, FATAL: 50
+        # a few more levels can be added here...
+        # logging.INFO: 20
+        # logging.WARNING, logging.WARN: 30
+        # logging.ERROR: 40
+        # logging.CRITICAL, logging.FATAL: 50
 
     def __init__(self, name, level: int = logging.NOTSET):
         super().__init__(name, level)
@@ -106,7 +106,7 @@ class CustomFormatter(logging.Formatter):
         logging.CRITICAL: BOLD_RED + FORMAT + NO_COLOR,
     }
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         log_fmt = self.FORMATS.get(record.levelno)
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
@@ -115,9 +115,8 @@ class CustomFormatter(logging.Formatter):
 logger = logging.getLogger('spider')
 logger.setLevel(CustomLogger.Levels.DB_INFO)
 
-ch = logging.StreamHandler()
-ch.setLevel(CustomLogger.Levels.DB_INFO)
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(CustomLogger.Levels.DB_INFO)
+stream_handler.setFormatter(CustomFormatter())
 
-ch.setFormatter(CustomFormatter())
-
-logger.addHandler(ch)
+logger.addHandler(stream_handler)

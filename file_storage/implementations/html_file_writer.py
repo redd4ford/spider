@@ -57,7 +57,7 @@ class HTMLFileWriter(BaseFileWriter):
     @classmethod
     def __generate_file_name(cls, url: URL) -> str:
         """
-        Format: `subdomain_link_uuid4.html`, e.g. www_google_com_<UUID4>.html
+        Format: `link_uuid4.html`, e.g. www_google_com_<UUID4>.html
         """
         return f'{url.host.replace(".", "_")}_{uuid.uuid4()}.html'
 

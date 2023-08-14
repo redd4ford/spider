@@ -1,7 +1,7 @@
-from controller.core.types.abstract_type import AbstractType
+from controllers.core.types.abstract_types import AbstractEnumType
 
 
-class SupportedActions(AbstractType):
+class SupportedActions(AbstractEnumType):
     """
     Supported actions for `spider.py cobweb []` command.
     """

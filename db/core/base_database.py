@@ -11,12 +11,12 @@ class BaseDatabase(abc.ABC):
     Base Database class to be used as parent for all Database subclasses.
     """
 
-    # TODO(redd4ford): implement DB operations for: MongoDB, MySQL, SQLite, Elasticsearch
+    # TODO(redd4ford): implement DB operations for: MySQL, SQLite, Elasticsearch
 
     file_controller: BaseFileWriter = BaseFileWriter
     table: Table = None
 
-    def __init__(self, host: str, login: str, pwd: str, db: str, driver: str = ''):
+    def __init__(self, _host: str, _login: str, _pwd: str, _db: str, _driver: str = ''):
         super().__init__()
 
     @abc.abstractmethod
@@ -64,8 +64,8 @@ class BaseDatabase(abc.ABC):
     @abc.abstractmethod
     async def update(cls, key: Any, content: str, connection, silent: bool) -> str:
         """
-        ON CONFLICT DO UPDATE operation. This is meant to be used inside save(), so an existing
-        connection is passed here.
+        ON CONFLICT DO UPDATE operation. This is meant to be used inside save(), so
+        an existing :param connection: should be passed.
         """
         pass
 

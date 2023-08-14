@@ -24,7 +24,7 @@ class BaseFileWriter(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def delete(cls, file_name):
+    def delete(cls, file_name: Any):
         """
         Delete file by :param file_name:.
         """

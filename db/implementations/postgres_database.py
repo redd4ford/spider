@@ -2,29 +2,29 @@ from asyncpgsa import PG
 import asyncpg.exceptions
 from asyncpg.pool import PoolConnectionProxy
 from sqlalchemy import (
-    Table,
     create_engine,
-)
-from sqlalchemy.engine import Engine
-from sqlalchemy.sql.expression import (
-    select,
-    func,
+    Table,
 )
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.engine import Engine
+from sqlalchemy.sql.expression import (
+    func,
+    select,
+)
 import sqlalchemy.exc
 from yarl import URL
 
-from controller.core.loggers import logger
+from controllers.core.loggers import logger
 from db.core import (
-    Singleton,
     BaseDatabase,
+    Singleton,
 )
 from db.exceptions import (
-    DatabaseNotFoundError,
-    TableNotFoundError,
-    TableAlreadyExists,
-    DatabaseError,
     CredentialsError,
+    DatabaseError,
+    DatabaseNotFoundError,
+    TableAlreadyExists,
+    TableNotFoundError,
 )
 from db.schema import (
     urls_table,
@@ -44,9 +44,13 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
     table: Table = urls_table
     unique_constraint: str = urls_unique_constraint
 
-    def __init__(self, host: str, login: str, pwd: str, db: str, driver: str = default_driver):
+    def __init__(
+        self, host: str, login: str, pwd: str, db: str, driver: str = default_driver
+    ):
         super().__init__(host, login, pwd, db, driver)
         self.__conn_string = f'{driver}://{login}:{pwd}@{host}/{db}'
+        self.__db_host = host
+        self.__db_name = db
 
         self.__pg = PG()
         self.is_initialized = False
@@ -87,7 +91,9 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
             url=self.__conn_string, echo=do_logging
         )
 
-    async def save(self, key: URL, name: str, content: str, parent: str, silent: bool = False):
+    async def save(
+        self, key: URL, name: str, content: str, parent: str, silent: bool = False
+    ):
         """
         Save an entry to the DB.
         """
@@ -120,11 +126,11 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
 
             logger.crawl_info(f'Save URL: {key}')
         except asyncpg.exceptions.InvalidCatalogNameError:
-            raise DatabaseNotFoundError
+            raise DatabaseNotFoundError(self.__db_name, self.__db_host)
         except asyncpg.exceptions.UndefinedTableError:
-            raise TableNotFoundError
+            raise TableNotFoundError(self.table.name, self.__db_name)
         except asyncpg.exceptions.InvalidPasswordError:
-            raise CredentialsError
+            raise CredentialsError(self.__db_host)
 
     async def get(self, parent: str, limit: int = 10):
         """
@@ -140,13 +146,15 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
                     .limit(limit)
                 )
 
-                return await conn.fetch(query)
+                d = await conn.fetch(query)
+                print(type(d))
+                return d
         except asyncpg.exceptions.InvalidCatalogNameError:
-            raise DatabaseNotFoundError
+            raise DatabaseNotFoundError(self.__db_name, self.__db_host)
         except asyncpg.exceptions.UndefinedTableError:
-            raise TableNotFoundError
+            raise TableNotFoundError(self.table.name, self.__db_name)
         except asyncpg.exceptions.InvalidPasswordError:
-            raise CredentialsError
+            raise CredentialsError(self.__db_host)
 
     async def update(
         self, url: URL, content: str, connection: PoolConnectionProxy, silent: bool
@@ -180,11 +188,11 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
 
                 result = await conn.fetch(query)
         except asyncpg.exceptions.InvalidCatalogNameError:
-            raise DatabaseNotFoundError
+            raise DatabaseNotFoundError(self.__db_name, self.__db_host)
         except asyncpg.exceptions.UndefinedTableError:
-            raise TableNotFoundError
+            raise TableNotFoundError(self.table.name, self.__db_name)
         except asyncpg.exceptions.InvalidPasswordError:
-            raise CredentialsError
+            raise CredentialsError(self.__db_host)
         else:
             await pg.pool.close()
         return result[0].get('count_1', 0)
@@ -198,7 +206,7 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
         except sqlalchemy.exc.OperationalError as exc:
             raise DatabaseError(base_error=exc)
         except sqlalchemy.exc.ProgrammingError:
-            raise TableNotFoundError
+            raise TableNotFoundError(self.table.name, self.__db_name)
 
     def create_table(self, check_first: bool = False, silent: bool = False):
         """
@@ -209,4 +217,4 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
         except sqlalchemy.exc.OperationalError as exc:
             raise DatabaseError(base_error=exc)
         except sqlalchemy.exc.ProgrammingError:
-            raise TableAlreadyExists
+            raise TableAlreadyExists(self.table.name, self.__db_name)

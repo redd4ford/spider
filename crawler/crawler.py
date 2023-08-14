@@ -1,25 +1,24 @@
 import asyncio
 from typing import (
-    Tuple,
     Optional,
+    Tuple,
 )
 
 import bs4
 import httpx
-from bs4 import BeautifulSoup
 from yarl import URL
 
-from controller.core.decorators import (
+from crawler.decorators import (
     log_time,
     use_cache,
 )
-from controller.core.loggers import logger
+from controllers.core.loggers import logger
 from db.core import BaseDatabase
 
 
 class Crawler:
     """
-    Performs crawling of a URL with specified depth.
+    Performs crawling of a URL with specified depth level.
     """
 
     def __init__(
@@ -44,11 +43,10 @@ class Crawler:
         Main crawling method. The whole procedure is recursive and is performed in load().
         """
         try:
-            # trying to connect to db
             await self.db.connect()
             self.db.create_table(check_first=True, silent=True)
         except Exception as exc:
-            logger.error(f'Database error: {exc}')
+            logger.error(f'Database connection error: {exc}')
             return
 
         try:
@@ -57,7 +55,8 @@ class Crawler:
             await self.client.aclose()
             await self.db.disconnect()
             logger.crawl_ok(
-                f'Done. (crawled: {self.successful_crawls_counter}, total calls: {self.total_calls})'
+                f'Done. (crawled: {self.successful_crawls_counter}, '
+                f'total calls: {self.total_calls})'
             )
 
     @use_cache
@@ -88,7 +87,9 @@ class Crawler:
         todos = [self.load(ref, level + 1) for ref in refs]
         await asyncio.gather(*todos)
 
-    async def __load_and_parse(self, url: URL) -> Optional[Tuple[Optional[str], str, BeautifulSoup]]:
+    async def __load_and_parse(self, url: URL) -> Optional[
+        Tuple[Optional[str], str, bs4.BeautifulSoup]
+    ]:
         """
         Async request of :param url: and response parsing.
         """
@@ -120,12 +121,14 @@ class Crawler:
                 continue
 
     @classmethod
-    def __parsed(cls, response: httpx.Response) -> Tuple[Optional[str], str, BeautifulSoup]:
+    def __parsed(cls, response: httpx.Response) -> Tuple[
+        Optional[str], str, bs4.BeautifulSoup
+    ]:
         """
         Extract html_body and title from the :param response:.
         """
         # noinspection PyTypeChecker
-        soup = BeautifulSoup(response, 'lxml')
+        soup = bs4.BeautifulSoup(response, 'lxml')
 
         title_html = soup.title
         title = getattr(title_html, 'text', None)
