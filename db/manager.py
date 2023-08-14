@@ -27,7 +27,7 @@ class DatabaseManager(Borg):
             self._databases = databases
         else:
             # initiate the first instance with default state
-            if not hasattr(self, "databases"):
+            if not hasattr(self, "_databases"):
                 self._databases = {}
 
     def _inject(self, database: Type[BaseDatabase]):

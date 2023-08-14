@@ -1,4 +1,7 @@
-from typing import Dict
+from typing import (
+    Any,
+    Dict,
+)
 
 
 class Singleton(type):
@@ -19,7 +22,7 @@ class Borg:
     Implementation of Singleton behavior using Borg (Monostate) pattern.
     """
 
-    _shared_state: Dict[str, str] = {}
+    _shared_state: Dict[str, Any] = {}
 
     def __init__(self) -> None:
         self.__dict__ = self._shared_state
