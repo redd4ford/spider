@@ -3,17 +3,19 @@ from typing import Any
 
 from sqlalchemy import Table
 
+from db.core import BaseDatabaseMeta
+from db.schema import urls_table
 from file_storage.core import BaseFileWriter
 
 
-class BaseDatabase(abc.ABC):
+class BaseDatabase(abc.ABC, metaclass=BaseDatabaseMeta):
     """
     Base Database class to be used as parent for all Database subclasses.
     """
 
     verbose = 'OVERRIDE_THIS'
     file_controller: BaseFileWriter = BaseFileWriter
-    table: Table = None
+    table: Table = urls_table
 
     def __init__(self, _host: str, _login: str, _pwd: str, _db: str, _driver: str = ''):
         super().__init__()

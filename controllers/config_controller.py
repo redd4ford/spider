@@ -23,7 +23,6 @@ class ConfigController:
         self.config.read('config.ini')
 
         self.database_manager = DatabaseManager()
-        self.database_manager.run()
 
         self.db_config = self.config['DATABASE']
 
