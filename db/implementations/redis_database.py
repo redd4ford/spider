@@ -1,20 +1,18 @@
 from typing import Dict
 
 import aioredis
-from sqlalchemy import Table
 from yarl import URL
 
 from controllers.core.loggers import logger
-from db.schema import urls_table
 from db.core import (
-    Singleton,
     BaseDatabase,
+    Borg,
 )
 from file_storage.core import BaseFileWriter
 from file_storage.implementations import HTMLFileWriter
 
 
-class RedisDatabase(BaseDatabase, metaclass=type(Singleton)):
+class RedisDatabase(BaseDatabase, Borg):
     """
     Redis DAO, async implementation.
     """
@@ -23,7 +21,6 @@ class RedisDatabase(BaseDatabase, metaclass=type(Singleton)):
 
     verbose = 'redis'
     default_driver: str = 'redis'
-    table: Table = urls_table
     file_controller: BaseFileWriter = HTMLFileWriter
 
     def __init__(

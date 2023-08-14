@@ -1,23 +1,19 @@
 from asyncpgsa import PG
 import asyncpg.exceptions
 from asyncpg.pool import PoolConnectionProxy
-from sqlalchemy import (
-    create_engine,
-    Table,
-)
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Engine, create_engine
+import sqlalchemy.exc
 from sqlalchemy.sql.expression import (
     func,
     select,
 )
-import sqlalchemy.exc
 from yarl import URL
 
 from controllers.core.loggers import logger
 from db.core import (
     BaseDatabase,
-    Singleton,
+    Borg,
 )
 from db.exceptions import (
     CredentialsError,
@@ -26,15 +22,12 @@ from db.exceptions import (
     TableAlreadyExists,
     TableNotFoundError,
 )
-from db.schema import (
-    urls_table,
-    urls_unique_constraint,
-)
+from db.schema import urls_unique_constraint
 from file_storage.core import BaseFileWriter
 from file_storage.implementations import HTMLFileWriter
 
 
-class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
+class PostgresDatabase(BaseDatabase, Borg):
     """
     PostgreSQL DAO, async implementation.
     """
@@ -42,7 +35,6 @@ class PostgresDatabase(BaseDatabase, metaclass=type(Singleton)):
     verbose = 'postgresql'
     default_driver: str = 'postgresql'
     file_controller: BaseFileWriter = HTMLFileWriter
-    table: Table = urls_table
     unique_constraint: str = urls_unique_constraint
 
     def __init__(

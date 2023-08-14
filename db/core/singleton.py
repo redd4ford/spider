@@ -3,18 +3,7 @@ from typing import (
     Dict,
 )
 
-
-class Singleton(type):
-    """
-    Implementation of Singleton as a metaclass.
-    """
-
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
+from typing_extensions import Self
 
 
 class Borg:
@@ -26,3 +15,12 @@ class Borg:
 
     def __init__(self) -> None:
         self.__dict__ = self._shared_state
+
+    def __hash__(self):
+        return 1
+
+    def __eq__(self, other: Self) -> bool:
+        try:
+            return isinstance(other, type(self)) and self.__dict__ is other.__dict__
+        except AttributeError:
+            return False
