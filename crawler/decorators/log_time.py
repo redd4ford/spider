@@ -1,15 +1,19 @@
 import functools
 import time
+from typing import (
+    Any,
+    Callable,
+)
 
 from controllers.core.loggers import logger
 
 
-def log_time(func):
+def log_time(func: Callable[..., Any]) -> Callable[..., Any]:
     """
     Measure the elapsed time of a function/method.
     """
     @functools.wraps(func)
-    async def wrapper(*args, **kwargs):
+    async def wrapper(*args: Any, **kwargs: Any):
         instance = args[0]
         do = getattr(instance, 'should_log_time', True)
 
