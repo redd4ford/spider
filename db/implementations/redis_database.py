@@ -1,4 +1,8 @@
-from typing import Dict
+from typing import (
+    Dict,
+    List,
+    Optional,
+)
 
 import aioredis
 from yarl import URL
@@ -7,6 +11,10 @@ from controllers.core.loggers import logger
 from db.core import (
     BaseDatabase,
     Borg,
+)
+from db.exceptions import (
+    CredentialsError,
+    DatabaseError,
 )
 from file_storage.core import BaseFileWriter
 from file_storage.implementations import HTMLFileWriter
@@ -17,8 +25,6 @@ class RedisDatabase(BaseDatabase, Borg):
     Redis DAO, async implementation.
     """
 
-    # TODO(redd4ford): handle exceptions
-
     verbose = 'redis'
     default_driver: str = 'redis'
     file_controller: BaseFileWriter = HTMLFileWriter
@@ -27,33 +33,54 @@ class RedisDatabase(BaseDatabase, Borg):
         self, host: str, login: str, pwd: str, db: str, driver: str = default_driver
     ):
         super().__init__(host, login, pwd, db, driver)
-        if not db.isdigit():
-            logger.error('DB name for a Redis database should be a digit (0-15)')
-        self.__conn_string = f'{driver}://{host}/{db}'
+        if login and pwd:
+            self.__conn_string = f'{driver}://{login}:{pwd}@{host}/{db}'
+        else:
+            self.__conn_string = f'{driver}://{host}/{db}'
 
-        self.__redis = None
+        self.__db_host = host
+
+        self.__redis: Optional[aioredis.commands.Redis] = None
         self.is_initialized = False
 
     async def connect(self):
         """
         Initiate database connection.
         """
-        if not self.is_initialized:
-            self.__redis: aioredis.commands.Redis = (
-                await aioredis.create_redis_pool(
-                    self.__conn_string,
-                    minsize=5,
-                    maxsize=10
+        try:
+            if not self.is_initialized:
+                self.__redis: aioredis.commands.Redis = (
+                    await aioredis.create_redis_pool(
+                        self.__conn_string,
+                        minsize=5,
+                        maxsize=10
+                    )
                 )
+                self.is_initialized = True
+        except AssertionError:
+            raise DatabaseError(
+                base_error='DB name for a Redis database should be a digit (0-15)'
             )
-            self.is_initialized = True
+        except ConnectionRefusedError:
+            raise DatabaseError(
+                base_error='Connection failed. Check if your Redis instance is up'
+            )
+        except aioredis.errors.AuthError as exc:
+            if "ERR invalid password" in str(exc):
+                raise CredentialsError(db_host=self.__db_host)
+            else:
+                raise DatabaseError(
+                    base_error='Authentication failed. Your Redis instance does not have '
+                               'a password set'
+                )
 
     async def disconnect(self):
         """
         Close the pool/session.
         """
-        self.__redis.close()
-        await self.__redis.wait_closed()
+        if self.is_initialized:
+            self.is_initialized = not self.is_initialized
+            self.__redis.quit()
 
     def engine(self, orm_logging: bool = True):
         return self.__redis
@@ -67,8 +94,8 @@ class RedisDatabase(BaseDatabase, Borg):
         if name is None:
             return
 
-        await self.connect()
-        if await self.__redis.hgetall(str(key)) is not None:
+        existing_record = await self.__redis.hgetall(str(key))
+        if existing_record is not None:
             html = await self.update(key, content, None, silent)
             await self.__redis.hmset_dict(
                 str(key),
@@ -88,7 +115,7 @@ class RedisDatabase(BaseDatabase, Borg):
                 }
             )
 
-    async def get(self, parent: str, limit: int = 10) -> Dict:
+    async def get(self, parent: str, limit: int = 10) -> List[Dict[str, str]]:
         """
         Select all DB entries where parent link equals :param parent:.
         The number of entries to get can be limited by :param limit:.
@@ -99,15 +126,20 @@ class RedisDatabase(BaseDatabase, Borg):
         while cur:
             cur, key = await self.__redis.scan(cur, match=f'*{parent}*')
             if key:
-                keys.append(key)
+                keys.extend(key)
             if len(keys) == limit:
                 break
 
-        data = {}
+        data = []
         if keys:
             values = await self.__redis.hmget(*keys, 'title')
             for key, value in zip(keys, values):
-                data[key] = value.decode('utf-8')
+                data.append(
+                    {
+                        'url': key.decode('utf-8'),
+                        'title': value.decode('utf-8') if value else ''
+                    }
+                )
         await self.disconnect()
         return data
 
@@ -119,17 +151,16 @@ class RedisDatabase(BaseDatabase, Borg):
         cur = b'0'
         counter = 0
         while cur:
-            cur, record = await self.__redis.scan(cur, match='*')
-            if record:
-                counter += 1
+            cur, record_set = await self.__redis.scan(cur, match='*')
+            if record_set:
+                counter += len(record_set)
         await self.disconnect()
         return counter
 
-    async def update(self, key: URL, content: str, connection, silent: bool) -> str:
+    async def update(self, key: URL, content: str, _, silent: bool) -> str:
         """
         Delete HTML file and store a new one if URL was previously crawled.
         """
-        await self.connect()
         old_html = await self.__redis.hmget(str(key), 'html')
         if len(old_html) == 1 and old_html[0]:
             old_html = old_html[0].decode('utf-8')

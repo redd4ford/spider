@@ -27,7 +27,7 @@ class DatabaseOperationsController:
 
     def __init__(self, db_type: str, login: str, pwd: str, host: str, db_name: str):
         self._database_manager = DatabaseManager()
-        self.db: BaseDatabase = self.__get_dao(db_type, login, pwd, host, db_name)
+        self.db: BaseDatabase = self.__build_database(db_type, login, pwd, host, db_name)
         logger.db_info(
             f'Initialized {db_type} `{db_name}` to work with '
             f'table `{self.db.table.name}`.'
@@ -92,12 +92,14 @@ class DatabaseOperationsController:
         """
         try:
             counter = await self.db.count_all()
-        except (CredentialsError, DatabaseNotFoundError, TableNotFoundError) as exc:
+        except (
+            CredentialsError, DatabaseNotFoundError, TableNotFoundError, DatabaseError
+        ) as exc:
             logger.error(exc)
         else:
             logger.info(f'Found {counter} entries in the database.')
 
-    def __get_dao(
+    def __build_database(
         self, db_type: str, login: str, pwd: str, host: str, db_name: str
     ) -> BaseDatabase:
         """
@@ -109,4 +111,4 @@ class DatabaseOperationsController:
                 f'Database type `{db_type}` is not supported. Using default from config.'
             )
             dao = self._database_manager.default_database
-        return dao(login, pwd, host, db_name)
+        return dao(host, login, pwd, db_name)

@@ -1,3 +1,5 @@
+import socket
+
 from asyncpgsa import PG
 import asyncpg.exceptions
 from asyncpg.pool import PoolConnectionProxy
@@ -45,8 +47,8 @@ class PostgresDatabase(BaseDatabase, Borg):
         self.__db_host = host
         self.__db_name = db
 
-        self.__pg = PG()
         self.is_initialized = False
+        self.__pg = PG()
 
     async def __init(self):
         """
@@ -64,14 +66,22 @@ class PostgresDatabase(BaseDatabase, Borg):
         """
         Return object that can generate a transaction.
         """
-        await self.__init()
-        return self.__pg
+        try:
+            await self.__init()
+            return self.__pg
+        except asyncpg.exceptions.InvalidPasswordError:
+            raise CredentialsError(self.__db_host)
+        except socket.gaierror as exc:
+            raise DatabaseError(base_error=exc)
+        except asyncpg.exceptions.InvalidCatalogNameError:
+            raise DatabaseNotFoundError(self.__db_name, self.__db_host)
 
     async def disconnect(self):
         """
         Close the pool.
         """
         if self.is_initialized:
+            self.is_initialized = not self.is_initialized
             await self.__pg.pool.close()
 
     def engine(self, silent: bool = False) -> Engine:
@@ -118,12 +128,8 @@ class PostgresDatabase(BaseDatabase, Borg):
                 await conn.execute(query)
 
             logger.crawl_info(f'Save URL: {key}')
-        except asyncpg.exceptions.InvalidCatalogNameError:
-            raise DatabaseNotFoundError(self.__db_name, self.__db_host)
         except asyncpg.exceptions.UndefinedTableError:
             raise TableNotFoundError(self.table.name, self.__db_name)
-        except asyncpg.exceptions.InvalidPasswordError:
-            raise CredentialsError(self.__db_host)
 
     async def get(self, parent: str, limit: int = 10):
         """
@@ -140,12 +146,8 @@ class PostgresDatabase(BaseDatabase, Borg):
                 )
 
                 return await conn.fetch(query)
-        except asyncpg.exceptions.InvalidCatalogNameError:
-            raise DatabaseNotFoundError(self.__db_name, self.__db_host)
         except asyncpg.exceptions.UndefinedTableError:
             raise TableNotFoundError(self.table.name, self.__db_name)
-        except asyncpg.exceptions.InvalidPasswordError:
-            raise CredentialsError(self.__db_host)
 
     async def update(
         self, url: URL, content: str, connection: PoolConnectionProxy, silent: bool
@@ -170,20 +172,16 @@ class PostgresDatabase(BaseDatabase, Borg):
         """
         Count all entries in the DB.
         """
+        pg = await self.connect()
         try:
-            pg = await self.connect()
             async with pg.transaction() as conn:
                 query = (
                     select([func.count()]).select_from(self.table)
                 )
 
                 result = await conn.fetch(query)
-        except asyncpg.exceptions.InvalidCatalogNameError:
-            raise DatabaseNotFoundError(self.__db_name, self.__db_host)
         except asyncpg.exceptions.UndefinedTableError:
             raise TableNotFoundError(self.table.name, self.__db_name)
-        except asyncpg.exceptions.InvalidPasswordError:
-            raise CredentialsError(self.__db_host)
         else:
             await pg.pool.close()
         return result[0].get('count_1', 0)
@@ -195,7 +193,7 @@ class PostgresDatabase(BaseDatabase, Borg):
         try:
             self.table.drop(self.engine(silent), check_first)
         except sqlalchemy.exc.OperationalError as exc:
-            raise DatabaseError(base_error=exc)
+            raise DatabaseError(base_error=self.__format_exception(exc))
         except sqlalchemy.exc.ProgrammingError:
             raise TableNotFoundError(self.table.name, self.__db_name)
 
@@ -206,6 +204,10 @@ class PostgresDatabase(BaseDatabase, Borg):
         try:
             self.table.create(self.engine(silent), check_first)
         except sqlalchemy.exc.OperationalError as exc:
-            raise DatabaseError(base_error=exc)
+            raise DatabaseError(base_error=self.__format_exception(exc))
         except sqlalchemy.exc.ProgrammingError:
             raise TableAlreadyExists(self.table.name, self.__db_name)
+
+    @classmethod
+    def __format_exception(cls, exc: sqlalchemy.exc.OperationalError) -> str:
+        return str(exc.orig).replace('\n', '').capitalize()
