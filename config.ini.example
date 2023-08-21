@@ -4,3 +4,5 @@ username = user
 password = pwd
 host = URL:PORT
 name = spider ; for Redis, use a digit (0-15)
+[INFRASTRUCTURE]
+proxy_host = http://proxy_server_ip:proxy_server_port

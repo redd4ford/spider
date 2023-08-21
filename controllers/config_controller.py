@@ -1,7 +1,10 @@
 from argparse import Namespace
 from configparser import ConfigParser
 import os
-from typing import Optional
+from typing import (
+    List,
+    Optional,
+)
 
 from controllers.core.loggers import logger
 from db import DatabaseManager
@@ -13,10 +16,11 @@ class ConfigController:
     """
 
     file_name: str = 'config.ini'
+    sections: List[str] = ['DATABASE', 'INFRASTRUCTURE']
 
     def __init__(self):
         if not os.path.exists(self.file_name):
-            self.__create_db_section()
+            self.__create_empty_config()
             logger.warning(f'File `{self.file_name}` does not exist, creating it...')
 
         self.config = ConfigParser()
@@ -25,31 +29,43 @@ class ConfigController:
         self.database_manager = DatabaseManager()
 
         self.db_config = self.config['DATABASE']
+        self.infrastructure_config = self.config['INFRASTRUCTURE']
 
-    def __create_db_section(self):
+    def __create_empty_config(self):
         """
-        Create an empty config file with [DATABASE] section.
+        Create an empty config file with the specified sections.
         """
         with open(self.file_name, 'a') as config_file:
-            config_file.write('[DATABASE]')
+            for section in self.sections:
+                config_file.write(f'[{section}]')
 
     def get_db_config(self, key: str) -> Optional[str]:
         """
-        Get value by its :param key: from config's DATABASE section.
+        Get value by its :param key: from config's [DATABASE] section.
         """
         return self.db_config.get(key, None)
 
-    def set_db_config(self, key: str, value: str):
+    def get_infrastructure_config(self, key: str) -> Optional[str]:
         """
-        Set :param value: for a :param key: field in the config's DATABASE section.
+        Get value by its :param key: from config's [INFRASTRUCTURE] section.
         """
-        self.config.set('DATABASE', key, value)
+        return self.infrastructure_config.get(key, None)
 
-    def is_db_config_empty(self) -> bool:
+    def set_config(self, section: str, key: str, value: str):
         """
-        Check if the DATABASE section in config is empty.
+        Set :param value: for a :param key: field in the config's :param section:.
         """
-        return len(self.db_config.values()) == 0
+        if section not in self.sections:
+            raise ValueError('This section is not listed in ConfigController.sections')
+        self.config.set(section, key, value)
+
+    def is_config_section_empty(self, section: str) -> bool:
+        """
+        Check if :param section: in config is empty.
+        """
+        if section not in self.sections:
+            raise ValueError('This section is not listed in ConfigController.sections')
+        return len(self.config[section].values()) == 0
 
     def update(self, args: Namespace):
         """
@@ -66,7 +82,7 @@ class ConfigController:
         }
 
         for name, value in db_login_args.items():
-            self.set_db_config(name, value)
+            self.set_config('DATABASE', name, value)
 
         self.__update_config_file()
 
