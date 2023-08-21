@@ -93,7 +93,7 @@ class CustomFormatter(logging.Formatter):
     RED = '\x1b[31;20m'
     BOLD_RED = '\x1b[31;1m'
     NO_COLOR = '\x1b[0m'
-    FORMAT = '%(name)s | %(message)s'
+    FORMAT = '%(name)s 🕸 %(message)s'
 
     FORMATS = {
         logging.DEBUG: GREY + FORMAT + NO_COLOR,
