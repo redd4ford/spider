@@ -2,10 +2,18 @@ import asyncio
 from typing import (
     Optional,
     Tuple,
+    Union,
 )
 
-import bs4
-import httpx
+from bs4 import (
+    BeautifulSoup,
+    ResultSet as bsResultSet,
+)
+from httpx import (
+    AsyncClient,
+    HTTPError,
+    Response,
+)
 from yarl import URL
 
 from crawler.decorators import (
@@ -13,6 +21,7 @@ from crawler.decorators import (
     use_cache,
 )
 from controllers.core.loggers import logger
+from crawler.exceptions import IncorrectProxyFormatError
 from db.core import BaseDatabase
 
 
@@ -24,12 +33,21 @@ class Crawler:
     def __init__(
         self, database: BaseDatabase, start_url: str, depth: int,
         silent: bool = False, should_log_time: bool = True, should_use_cache: bool = True,
+        proxy: Union[str, bool] = False
     ):
-        self.client = httpx.AsyncClient()
+        self.proxy = proxy if isinstance(proxy, str) else None
+        client_proxies = (
+            {'http://': self.proxy, 'https://': self.proxy} if self.proxy
+            else None
+        )
+        try:
+            self.client = AsyncClient(proxies=client_proxies)
+        except ValueError:
+            raise IncorrectProxyFormatError(self.proxy)
+
         self.db = database
         self.url = URL(start_url)
         self.depth = depth
-
         self.silent = silent
         self.should_log_time = should_log_time
         self.should_use_cache = should_use_cache
@@ -41,6 +59,11 @@ class Crawler:
     async def crawl(self):
         """
         Main crawling method. The whole procedure is recursive and is performed in load().
+
+        Uses a semaphore to ensure that only a controlled number of requests are made
+        at once, preventing resource and network overload and considering server limits.
+        As each task completes its execution, the semaphore is released, allowing
+        other waiting tasks to acquire it and start their execution.
         """
         try:
             await self.db.connect()
@@ -50,7 +73,9 @@ class Crawler:
             return
 
         try:
-            await self.load(self.url, 0)
+            # TODO(redd4ford): make concurrency_limit a command parameter
+            async with asyncio.Semaphore(value=5):
+                await self.load(self.url, 0)
         finally:
             await self.client.aclose()
             await self.db.disconnect()
@@ -67,15 +92,16 @@ class Crawler:
         """
         self.total_calls += 1
         try:
-            title, html_body, soup = await self.__load_and_parse(url)
+            title, html_body, soup = await self.__scrap_url(url)
             self.successful_crawls_counter += 1
         except TypeError:
-            logger.crawl_info(f'Cannot download URL: {url}.')
+            logger.crawl_info(f'Cannot download URL: {url}')
             return
 
         asyncio.ensure_future(
             self.db.save(
-                url, title, html_body, parent=self.url.human_repr(), silent=self.silent
+                url, title, html_body, parent=self.url.human_repr(),
+                silent=self.silent
             ),
             loop=asyncio.get_running_loop()
         )
@@ -87,23 +113,26 @@ class Crawler:
         todos = [self.load(ref, level + 1) for ref in refs]
         await asyncio.gather(*todos)
 
-    async def __load_and_parse(self, url: URL) -> Optional[
-        Tuple[Optional[str], str, bs4.BeautifulSoup]
+    async def __scrap_url(self, url: URL) -> Optional[
+        Tuple[Optional[str], str, BeautifulSoup]
     ]:
         """
         Async request of :param url: and response parsing.
         """
         try:
             response = await self.client.get(str(url))
-        except httpx.HTTPError as exc:
-            logger.crawl_info(f'HTTP Exception for {exc.request.url}')
+        except HTTPError as exc:
+            logger.crawl_info(
+                f'HTTP Exception for {exc.request.url}: {type(exc).__name__}' +
+                ('. Check if your proxy host is correct.' if self.proxy else '')
+            )
             return
         except ValueError:
             return
 
         return self.__parsed(response)
 
-    def __generate_refs(self, bs_result_set: bs4.ResultSet):
+    def __generate_refs(self, bs_result_set: bsResultSet):
         """
         Find hrefs in the current page to go deeper.
         """
@@ -121,14 +150,12 @@ class Crawler:
                 continue
 
     @classmethod
-    def __parsed(cls, response: httpx.Response) -> Tuple[
-        Optional[str], str, bs4.BeautifulSoup
-    ]:
+    def __parsed(cls, response: Response) -> Tuple[Optional[str], str, BeautifulSoup]:
         """
         Extract html_body and title from the :param response:.
         """
         # noinspection PyTypeChecker
-        soup = bs4.BeautifulSoup(response, 'lxml')
+        soup = BeautifulSoup(response, 'lxml')
 
         title_html = soup.title
         title = getattr(title_html, 'text', None)
