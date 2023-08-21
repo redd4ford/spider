@@ -74,8 +74,13 @@ async def main():
         help='do not measure crawler execution time',
     )
     save_parser.add_argument(
-        '--silent', action='store_true', default=False,
+        '--silent', dest='silent', action='store_true', default=False,
         help='prevent the logging from crawler'
+    )
+    save_parser.add_argument(
+        '--use-proxy', dest='use_proxy', action='store_true', default=False,
+        help='use proxy server specified in config.ini to avoid IP blocking and enhance '
+             'privacy'
     )
     save_parser.set_defaults(func=AppController.save)
 
@@ -90,7 +95,7 @@ async def main():
     argcomplete.autocomplete(main_parser)   # TODO(redd4ford): finish autocomplete
     args = main_parser.parse_args()
 
-    if config.is_db_config_empty() and any(
+    if config.is_config_section_empty(section='DATABASE') and any(
         [
             args.db_type is None,
             args.db_user is None,
@@ -107,10 +112,14 @@ async def main():
             f'stored to `{config.file_name}` as default connection values.'
         )
     else:
-        if args.db_update or config.is_db_config_empty():
+        if args.db_update or config.is_config_section_empty(section='DATABASE'):
             ConfigController().update(args)
 
         if func := getattr(args, 'func', None):
+            use_proxy = getattr(args, 'use_proxy', False)
+            args.proxy = (
+                config.get_infrastructure_config('proxy_host') if use_proxy else None
+            )
             await func(args)
         else:
             main_parser.print_usage()

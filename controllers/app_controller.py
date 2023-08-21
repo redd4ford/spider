@@ -4,6 +4,7 @@ from controllers import DatabaseOperationsController
 from controllers.core.context_managers import DelayedKeyboardInterrupt
 from controllers.core.loggers import logger
 from crawler import Crawler
+from crawler.exceptions import IncorrectProxyFormatError
 
 
 class AppController:
@@ -39,10 +40,10 @@ class AppController:
             :param args: (Namespace) - A set of args entered by the user to perform DB
                 connection, provide a URL (:param args.url:) to crawl by, and provide
                 the level of depth (:param args.depth:). E.g.:
-                    depth=0 means "crawl a main page",
-                    depth=1 means "crawl a main page and links inside the main page",
-                    depth=2 means "crawl a main page, links inside the main page,
-                    and links inside them as well".
+                    depth=0 means "crawl the page by URL (parent page)",
+                    depth=1 means "crawl the parent page and all its nested links",
+                    depth=2 means "crawl the parent page, all its nested links,
+                    and all the links inside them as well".
                     etc.
         """
         db_login_args = (
@@ -51,17 +52,20 @@ class AppController:
         )
 
         crawl_args = (
-            args.url, args.depth, args.silent, args.log_time, args.cache
+            args.url, args.depth, args.silent, args.log_time, args.cache, args.proxy
         )
 
         logger.update_level(args.silent, operation='crawl')
 
-        spider = Crawler(
-            DatabaseOperationsController(*db_login_args).db,
-            *crawl_args
-        )
-        with DelayedKeyboardInterrupt():
-            await spider.crawl()
+        try:
+            spider = Crawler(
+                DatabaseOperationsController(*db_login_args).db, *crawl_args
+            )
+        except IncorrectProxyFormatError as exc:
+            logger.error(exc)
+        else:
+            with DelayedKeyboardInterrupt():
+                await spider.crawl()
 
     @classmethod
     async def db(cls, args: Namespace):
