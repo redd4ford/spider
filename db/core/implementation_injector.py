@@ -15,19 +15,19 @@ class DatabaseImplementationInjector(type):
     https://github.com/faif/python-patterns/blob/master/patterns/behavioral/registry.py
     """
 
-    __REGISTRY: Dict[str, "DatabaseImplementationInjector"] = {}
+    __REGISTRY: Dict[str, 'DatabaseImplementationInjector'] = {}
 
     def __new__(cls, name: str, bases: Tuple, attrs: Dict[str, Any]):
         new_cls = type.__new__(cls, name, bases, attrs)
 
         # do not add the base class to the registry, ONLY store the implementations
         if abc.ABC not in bases:
-            implementation_name = getattr(new_cls, "verbose", "")
+            implementation_name = getattr(new_cls, 'verbose', '')
             cls.__REGISTRY[implementation_name] = new_cls
         return new_cls
 
     @classmethod
-    def get_registry(cls) -> Dict[str, "DatabaseImplementationInjector"]:
+    def get_registry(cls) -> Dict[str, 'DatabaseImplementationInjector']:
         return cls.__REGISTRY
 
 
