@@ -2,6 +2,7 @@ import dataclasses
 from typing import (
     Dict,
     List,
+    Optional,
     Union,
 )
 
@@ -10,8 +11,10 @@ from typing_extensions import Self
 
 @dataclasses.dataclass
 class Record:
-    url: str = ''
-    title: str = ''
+    __slots__ = ('url', 'title')
+
+    url: str
+    title: Optional[str]
 
 
 class RecordIterator:
