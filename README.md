@@ -7,7 +7,7 @@ This CLI web crawler stores files to a storage and uses a DB to store the crawle
 
 Crawler will print the number of calls and elapsed time in the end of procedure.
 
-The key parameter of `crawl` is `--depth`. Depth lets you specify how many child URLs (`<a>` tags inside the parent URL) you want to crawl. For instance:
+The key parameter of `crawl` is `--depth`. Depth level lets you specify how many child URLs (`<a>` tags inside the parent URL) you want to crawl. For instance:
 * `--depth 0` means "crawl just the parent page"; 
 * `--depth 1` means "crawl the parent page and all the links inside the parent page"; 
 * `--depth 2` means "crawl the parent page, all the links inside the parent page, and all the links inside those pages";
@@ -58,7 +58,7 @@ If you wish to overwrite your config defaults (or just any specific value, e.g. 
 * `python spider.py crawl [url] --depth [int]` - crawl **url** with specified **depth**.
   * `--depth` (default=1) - specify how many child URLs (`<a>` tags) you want to crawl
   * `--silent` (opt) - use this argument to run the command in silent mode, without any logs from the crawler
-  * `--no-cache`(opt) - disable caching of URLs which were scraped during this command run (leads to DB/file overwrite operations if this link is present in many pages)
+  * `--no-cache` (opt) - disable caching of URLs which were scraped during this command run (leads to DB/file overwrite operations if this link is present in many pages)
   * `--no-logtime` (opt) - disable crawler execution time measuring
 * `python spider.py cobweb [action]` - perform DB operations: `drop/create/count`.
   * action=`drop` means "drop the table from the DB and remove all the files stored"
@@ -74,6 +74,7 @@ If you wish to overwrite your config defaults (or just any specific value, e.g. 
   - [ ] MySQL, 
   - [ ] SQLite,
   - [ ] Elasticsearch 
+- [ ] Add concurrency level control
 - [ ] Implement `--no-overwrite (bool)` parameter in `crawl`
 - [ ] Implement parsing of different types of files (XML, CSS etc.)
 - [ ] Implement `--file-type (str in choices)` parameter in `crawl`
@@ -87,6 +88,7 @@ If you wish to overwrite your config defaults (or just any specific value, e.g. 
 - [x] Implement `--no-cache` and `--no-logtime` parameters for decorators
 - [x] Implement DB switch - `--db-type` parameter + configparser
 - [x] Implement proper logging
+- [x] Proxy support
 
 ## Why?
 
