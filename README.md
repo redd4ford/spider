@@ -3,19 +3,19 @@ redd4ford | v0.0.1
 
 ## How it works
 
-This CLI web crawler stores files to a storage and uses a DB to store the crawled page meta and the file path.
+This CLI web crawler stores files in storage and uses a DB to store the crawled page meta and the file path.
 
-Crawler will print the number of calls and elapsed time in the end of procedure.
+Crawler will print the number of calls and elapsed time at the end of the procedure.
 
-The key parameter of `crawl` is `--depth`. Depth level lets you specify how many child URLs (`<a>` tags inside the parent URL) you want to crawl. For instance:
+The key parameter of `crawl` is `--depth`. The depth level lets you specify how many child URLs (`<a>` tags inside the parent URL) you want to crawl. For instance:
 * `--depth 0` means "crawl just the parent page"; 
 * `--depth 1` means "crawl the parent page and all the links inside the parent page"; 
 * `--depth 2` means "crawl the parent page, all the links inside the parent page, and all the links inside those pages";
 * and so on.
 
-Spider has a cache to prevent re-loading of the pages that were previously scraped during **this command run**. This means that if parent URL contains the same link as its child (or some children share the same link, etc.), the crawler skips that link.
+Spider has a cache to prevent re-loading of the pages that were previously scraped during **this command run**. This means that if the parent URL contains the same link as its child (or some children share the same link, etc.), the crawler skips that link.
 
-However, on command re-run, it does not skip the links that were scraped before; instead, it overwrites the files stored and updates the filepath in the DB.
+However, on command re-run, it does not skip the links that were scraped before; instead, it overwrites the files stored and updates the file path in the DB.
 
 Spider is asynchronous, which ensures that all the pages will eventually be scraped and stored. Donate me a couple of zettabyte hard drives, and I'll scrap the whole Internet with this thing.
 
@@ -28,11 +28,11 @@ Uses Python 3.9.
 ## Installation
 
 ### Manually
-* Create venv: `python -m venv /path/to/venv`
+* Create venv: `$ python -m venv /path/to/venv`
 * Activate venv:
-  * Linux/MacOS: source venv/bin/activate
-  * Windows: venv\Scripts\activate
-* Install requirements: `pip install -r requirements.txt`
+  * Linux/MacOS: `$ source venv/bin/activate`
+  * Windows: `$ venv\Scripts\activate`
+* Install requirements: `$ pip install -r requirements.txt`
 * (Opt) create `config.ini` based on `config.ini.example` to specify DB credentials.
 
 ## Usage
@@ -41,26 +41,26 @@ Uses Python 3.9.
 
 ### Config.ini
 
-Spider uses `config.ini` to store your default database credentials. You can create it yourself or add the following arguments to your commands:
+Spider uses `config.ini` to store your default database and infrastructure credentials. You can create it yourself or add the following arguments to your commands:
 * `--db-type` - {postgresql, mysql, sqlite, mongodb, redis, elasticsearch}
 * `--db-user` - username
 * `--db-pwd` - password
 * `--db-host` - host in this format: `IP:PORT`
 * `--db-name` - database name
 
-The first time you run a command, these arguments will be stored to a `config.ini` and will be used as default values whenever you don't provide DB access credentials.
+The first time you run a command, these arguments will be stored in a `config.ini` and used as default values whenever you don't provide DB access credentials.
 
 If you wish to overwrite your config defaults (or just any specific value, e.g. database type), add argument `--db-update`.
 
 ### Commands
 
-* `python spider.py get [url] -n [int]` - get **n** URLs from the DB where parent URL=**url**
-* `python spider.py crawl [url] --depth [int]` - crawl **url** with specified **depth**.
+* `$ python spider.py get [url] -n [int]` - get **n** URLs from the DB where parent URL=**url**
+* `$ python spider.py crawl [url] --depth [int]` - crawl **url** with specified **depth**.
   * `--depth` (default=1) - specify how many child URLs (`<a>` tags) you want to crawl
   * `--silent` (opt) - use this argument to run the command in silent mode, without any logs from the crawler
-  * `--no-cache` (opt) - disable caching of URLs which were scraped during this command run (leads to DB/file overwrite operations if this link is present in many pages)
+  * `--no-cache` (opt) - disable caching of URLs that were already scraped during this run (leads to DB/file overwrite operations if this link is present in many pages)
   * `--no-logtime` (opt) - disable crawler execution time measuring
-* `python spider.py cobweb [action]` - perform DB operations: `drop/create/count`.
+* `$ python spider.py cobweb [action]` - perform DB operations: `drop/create/count`.
   * action=`drop` means "drop the table from the DB and remove all the files stored"
   * action=`create` means "create the table in the DB"
   * action=`count` means "count all the records in the table"
@@ -70,15 +70,17 @@ If you wish to overwrite your config defaults (or just any specific value, e.g. 
 
 - [ ] Implement DB operations for:
   - [x] Redis, 
-  - [ ] MongoDB, 
   - [ ] MySQL, 
   - [ ] SQLite,
+  - [ ] MongoDB,
+  - [ ] Firebase,
   - [ ] Elasticsearch 
-- [ ] Add concurrency level control
-- [ ] Implement `--no-overwrite (bool)` parameter in `crawl`
-- [ ] Implement parsing of different types of files (XML, CSS etc.)
-- [ ] Implement `--file-type (str in choices)` parameter in `crawl`
-- [ ] Turn this into a command-line tool with setup options (probably use Typer instead of argparse?)
+- [ ] Add `--concurrency-limit (int)` parameter in `crawl`
+- [ ] Add `--no-overwrite (bool)` parameter in `crawl`
+- [ ] Implement parsing of different file types (XML, CSS, JavaScript, etc.)
+- [ ] Add `--file-types (str in the format: html,css,js - choices)` parameter in `crawl` (? or just do `--html`, `--css`, `--js`, `--xml` etc.?)
+- [ ] Allow saving files to different data volumes (local/AWS S3/Azure Blob/Google Storage/Cloud Storage for Firebase/Google Drive/remote FTP)
+- [ ] Turn this into a command-line tool with setup options
 - [ ] Configure autocomplete 
 - [ ] Wrap this as a docker-compose
 
