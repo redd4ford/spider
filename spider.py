@@ -51,13 +51,13 @@ async def main():
 
     subparsers = main_parser.add_subparsers(help='Available commands.')
 
-    get_parser = subparsers.add_parser('get', help='Get URL from DB.')
+    get_parser = subparsers.add_parser('catch', help='Get URL from DB.')
     get_parser.add_argument('url', help='parent URL address (e.g. https://google.com/')
     get_parser.add_argument(
         '-n', type=int, default=10,
         help='number of URLs to get by this parent (default=10)'
     )
-    get_parser.set_defaults(func=AppController.get)
+    get_parser.set_defaults(func=AppController.catch)
 
     save_parser = subparsers.add_parser('crawl', help='Save URL to the DB.')
     save_parser.add_argument('url', help='URL-address')

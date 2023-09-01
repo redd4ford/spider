@@ -54,7 +54,7 @@ If you wish to overwrite your config defaults (or just any specific value, e.g. 
 
 ### Commands
 
-* `$ python spider.py get [url] -n [int]` - get **n** URLs from the DB where parent URL=**url**
+* `$ python spider.py catch [url] -n [int]` - get **n** URLs from the DB where parent URL=**url**
 * `$ python spider.py crawl [url] --depth [int]` - crawl **url** with specified **depth**.
   * `--depth` (default=1) - specify how many child URLs (`<a>` tags) you want to crawl
   * `--silent` (opt) - use this argument to run the command in silent mode, without any logs from the crawler
@@ -68,6 +68,7 @@ If you wish to overwrite your config defaults (or just any specific value, e.g. 
 
 ## TODO
 
+v0.0.2
 - [ ] Implement DB operations for:
   - [x] Redis, 
   - [ ] MySQL, 
@@ -77,9 +78,15 @@ If you wish to overwrite your config defaults (or just any specific value, e.g. 
   - [ ] Elasticsearch 
 - [ ] Add `--concurrency-limit (int)` parameter in `crawl`
 - [ ] Add `--no-overwrite (bool)` parameter in `crawl`
+
+v0.0.3
 - [ ] Implement parsing of different file types (XML, CSS, JavaScript, etc.)
 - [ ] Add `--file-types (str in the format: html,css,js - choices)` parameter in `crawl` (? or just do `--html`, `--css`, `--js`, `--xml` etc.?)
+
+v0.0.4
 - [ ] Allow saving files to different data volumes (local/AWS S3/Azure Blob/Google Storage/Cloud Storage for Firebase/Google Drive/remote FTP)
+
+v1.0.0
 - [ ] Turn this into a command-line tool with setup options
 - [ ] Configure autocomplete 
 - [ ] Wrap this as a docker-compose

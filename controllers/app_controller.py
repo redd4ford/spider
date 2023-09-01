@@ -13,7 +13,7 @@ class AppController:
     """
 
     @classmethod
-    async def get(cls, args: Namespace):
+    async def catch(cls, args: Namespace):
         """
         Select from DB.
         Args:
