@@ -1,4 +1,8 @@
 import socket
+from typing import (
+    Dict,
+    List,
+)
 
 from asyncpgsa import PG
 import asyncpg.exceptions
@@ -131,7 +135,7 @@ class PostgresDatabase(BaseDatabase, Borg):
         except asyncpg.exceptions.UndefinedTableError:
             raise TableNotFoundError(self.table.name, self.__db_name)
 
-    async def get(self, parent: str, limit: int = 10):
+    async def get(self, parent: str, limit: int = 10) -> List[Dict[str, str]]:
         """
         Select all DB entries where parent link equals :param parent:.
         The number of entries to get can be limited by :param limit:.
@@ -144,8 +148,8 @@ class PostgresDatabase(BaseDatabase, Borg):
                     .where(self.table.c.parent == parent)
                     .limit(limit)
                 )
-
-                return await conn.fetch(query)
+                records = await conn.fetch(query)
+            return [dict(record) for record in records]
         except asyncpg.exceptions.UndefinedTableError:
             raise TableNotFoundError(self.table.name, self.__db_name)
 

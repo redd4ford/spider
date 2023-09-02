@@ -3,7 +3,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Union,
 )
 
 from typing_extensions import Self
@@ -22,7 +21,7 @@ class RecordIterator:
     Record iterator implementation.
     """
 
-    def __init__(self, records):
+    def __init__(self, records: List[Record]):
         self.records = records
         self.current = 0
 
@@ -42,20 +41,14 @@ class RecordSet:
     Iterable set of records.
     """
 
-    def __init__(self, raw_records: Union[List, Dict]):
+    def __init__(self, raw_records: List[Dict[str, str]]):
         if len(raw_records) == 0:
             self.records = []
         else:
-            if isinstance(raw_records[0], dict):
-                self.records = [
-                    Record(**raw_record)
-                    for raw_record in raw_records
-                ]
-            else:
-                self.records = [
-                    Record(*raw_record)
-                    for raw_record in raw_records
-                ]
+            self.records = [
+                Record(**raw_record)
+                for raw_record in raw_records
+            ]
 
     def __iter__(self) -> RecordIterator:
         return RecordIterator(self.records)
