@@ -57,6 +57,8 @@ If you wish to overwrite your config defaults (or just any specific value, e.g. 
 * `$ python spider.py catch [url] -n [int]` - get **n** URLs from the DB where parent URL=**url**
 * `$ python spider.py crawl [url] --depth [int]` - crawl **url** with specified **depth**.
   * `--depth` (default=1) - specify how many child URLs (`<a>` tags) you want to crawl
+  * `--concur` (default=5) - set the concurrency limit to reduce (or increase) stress on your machine and target web server, but keep in mind that crawling may become way slower (or way faster)
+  * `--use-proxy` (opt) - use the proxy server specified in your config file when you want to avoid IP blocking or 
   * `--silent` (opt) - use this argument to run the command in silent mode, without any logs from the crawler
   * `--no-cache` (opt) - disable caching of URLs that were already scraped during this run (leads to DB/file overwrite operations if this link is present in many pages)
   * `--no-logtime` (opt) - disable crawler execution time measuring
@@ -76,7 +78,6 @@ v0.0.2
   - [ ] MongoDB,
   - [ ] Firebase,
   - [ ] Elasticsearch 
-- [ ] Add `--concurrency-limit (int)` parameter in `crawl`
 - [ ] Add `--no-overwrite (bool)` parameter in `crawl`
 
 v0.0.3
@@ -98,6 +99,7 @@ v1.0.0
 - [x] Implement DB switch - `--db-type` parameter + configparser
 - [x] Implement proper logging
 - [x] Proxy support
+- [x] Add `--concur (int)` parameter in `crawl`
 
 ## Why?
 

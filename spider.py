@@ -65,6 +65,14 @@ async def main():
         '--depth', type=int, help='depth of scraping (default=1)', default=1
     )
     save_parser.add_argument(
+        '--concur', type=int,
+        help='concurrency limit is a number of requests that are made at once. '
+             'lets you save the machine\'s resources and prevent network overload. '
+             'remember that crawling takes more time when you reduce this parameter '
+             f'(default is from `{config.file_name}`)',
+        default=config.get_infrastructure_config('concurrency_limit')
+    )
+    save_parser.add_argument(
         '--no-cache', dest='cache', action='store_false',
         help='disable caching of URLs which were scraped during this command run (leads '
              'to DB/file overwrite operations if this link is present in many pages)',
@@ -79,8 +87,8 @@ async def main():
     )
     save_parser.add_argument(
         '--use-proxy', dest='use_proxy', action='store_true', default=False,
-        help='use proxy server specified in config.ini to avoid IP blocking and enhance '
-             'privacy'
+        help=f'use proxy server specified in `{config.file_name}` to avoid IP blocking '
+             'and enhance privacy'
     )
     save_parser.set_defaults(func=AppController.save)
 

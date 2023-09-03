@@ -33,7 +33,7 @@ class Crawler:
     def __init__(
         self, database: BaseDatabase, start_url: str, depth: int,
         silent: bool = False, should_log_time: bool = True, should_use_cache: bool = True,
-        proxy: Union[str, bool] = False
+        proxy: Union[str, bool] = False, concurrency_limit: int = 5
     ):
         self.proxy = proxy if isinstance(proxy, str) else None
         client_proxies = (
@@ -46,11 +46,15 @@ class Crawler:
             raise IncorrectProxyFormatError(self.proxy)
 
         self.db = database
+
+        if not start_url.startswith('http'):
+            start_url = f'https://{start_url}'
         self.url = URL(start_url)
         self.depth = depth
         self.silent = silent
         self.should_log_time = should_log_time
         self.should_use_cache = should_use_cache
+        self.concurrency_limit = concurrency_limit
 
         self.successful_crawls_counter = 0
         self.total_calls = 0
@@ -73,8 +77,7 @@ class Crawler:
             return
 
         try:
-            # TODO(redd4ford): make concurrency_limit a command parameter
-            async with asyncio.Semaphore(value=5):
+            async with asyncio.Semaphore(value=self.concurrency_limit):
                 await self.load(self.url, 0)
         finally:
             await self.client.aclose()

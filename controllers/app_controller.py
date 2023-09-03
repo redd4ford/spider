@@ -52,7 +52,8 @@ class AppController:
         )
 
         crawl_args = (
-            args.url, args.depth, args.silent, args.log_time, args.cache, args.proxy
+            args.url, args.depth, args.silent, args.log_time, args.cache, args.proxy,
+            args.concur
         )
 
         logger.update_level(args.silent, operation='crawl')
