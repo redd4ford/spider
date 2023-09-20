@@ -73,7 +73,7 @@ If you wish to overwrite your config defaults (or just any specific value, e.g. 
 v0.0.2
 - [ ] Implement DB operations for:
   - [x] Redis, 
-  - [ ] MySQL, 
+  - [x] MySQL, 
   - [ ] SQLite,
   - [ ] MongoDB,
   - [ ] Firebase,
