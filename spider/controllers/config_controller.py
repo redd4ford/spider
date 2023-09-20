@@ -6,8 +6,8 @@ from typing import (
     Optional,
 )
 
-from controllers.core.loggers import logger
-from db import DatabaseManager
+from spider.controllers.core.loggers import logger
+from spider.db import DatabaseManager
 
 
 class ConfigController:

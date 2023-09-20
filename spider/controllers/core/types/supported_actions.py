@@ -1,4 +1,4 @@
-from controllers.core.types.abstract_types import AbstractEnumType
+from spider.controllers.core.types.abstract_types import AbstractEnumType
 
 
 class SupportedActions(AbstractEnumType):

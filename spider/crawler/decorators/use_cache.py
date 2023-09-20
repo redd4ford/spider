@@ -4,7 +4,7 @@ from typing import (
     Callable,
 )
 
-from controllers.core.loggers import logger
+from spider.controllers.core.loggers import logger
 
 
 def use_cache(func: Callable[..., Any]) -> Callable[..., Any]:

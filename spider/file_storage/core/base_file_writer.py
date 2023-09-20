@@ -15,6 +15,13 @@ class BaseFileWriter(abc.ABC):
         super().__init__()
 
     @classmethod
+    def build_file_path(cls, file_name: str) -> Path:
+        """
+        Build Path object based on cls.PATH_TO_FILES and :file_name:.
+        """
+        return cls.PATH_TO_FILES.joinpath(file_name)
+
+    @classmethod
     @abc.abstractmethod
     async def write(cls, url: Any, content: str) -> str:
         """

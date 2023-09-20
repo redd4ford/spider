@@ -5,12 +5,12 @@ import argcomplete
 import argparse
 import asyncio
 
-from controllers import (
+from spider import (
     AppController,
     ConfigController,
 )
-from controllers.core.loggers import logger
-from controllers.core.types import SupportedActions
+from spider.controllers.core.loggers import logger
+from spider.controllers.core.types import SupportedActions
 
 __app_name__ = 'spider'
 __version__ = '0.0.1'
@@ -80,6 +80,11 @@ async def main():
     save_parser.add_argument(
         '--no-logtime', dest='log_time', action='store_false',
         help='do not measure crawler execution time',
+    )
+    save_parser.add_argument(
+        '--no-overwrite', dest='overwrite', action='store_false',
+        help='do not overwrite files of the pages that they were scraped before -- '
+             'skip them instead'
     )
     save_parser.add_argument(
         '--silent', dest='silent', action='store_true', default=False,

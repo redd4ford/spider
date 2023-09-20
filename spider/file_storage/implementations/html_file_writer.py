@@ -9,7 +9,7 @@ from aiofile import (
 )
 from yarl import URL
 
-from file_storage.core import BaseFileWriter
+from spider.file_storage import BaseFileWriter
 
 
 class HTMLFileWriter(BaseFileWriter):
@@ -28,7 +28,7 @@ class HTMLFileWriter(BaseFileWriter):
         cls.__create_folder_if_not_exists()
 
         file_name = cls.__generate_file_name(url)
-        path = cls.PATH_TO_FILES.joinpath(file_name)
+        path = cls.build_file_path(file_name)
 
         async with AIOFile(path, mode='w+') as file:
             writer = Writer(file)
@@ -40,9 +40,9 @@ class HTMLFileWriter(BaseFileWriter):
         """
         Delete the file by filename.
         """
-        file_path = cls.PATH_TO_FILES.joinpath(file_name)
+        file_path = cls.build_file_path(file_name)
         if os.path.exists(file_path):
-            os.remove(cls.PATH_TO_FILES.joinpath(file_name))
+            os.remove(file_path)
 
     @classmethod
     def drop_all(cls):

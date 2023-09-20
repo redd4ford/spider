@@ -77,12 +77,12 @@ v0.0.2
   - [ ] SQLite,
   - [ ] MongoDB,
   - [ ] Firebase,
-  - [ ] Elasticsearch 
-- [ ] Add `--no-overwrite (bool)` parameter in `crawl`
+  - [ ] Elasticsearch
 
 v0.0.3
 - [ ] Implement parsing of different file types (XML, CSS, JavaScript, etc.)
 - [ ] Add `--file-types (str in the format: html,css,js - choices)` parameter in `crawl` (? or just do `--html`, `--css`, `--js`, `--xml` etc.?)
+- [ ] Add tests
 
 v0.0.4
 - [ ] Allow saving files to different data volumes (local/AWS S3/Azure Blob/Google Storage/Cloud Storage for Firebase/Google Drive/remote FTP)
@@ -100,6 +100,7 @@ v1.0.0
 - [x] Implement proper logging
 - [x] Proxy support
 - [x] Add `--concur (int)` parameter in `crawl`
+- [x] Add `--no-overwrite (bool)` parameter in `crawl`
 
 ## Why?
 

@@ -4,12 +4,12 @@ from typing import (
     Type,
 )
 
-from db.core import (
+from spider.db.core import (
     BaseDatabase,
     Borg,
     DatabaseImplementationInjector,
 )
-from db.implementations import PostgresDatabase
+from spider.db.implementations import PostgresDatabase
 
 
 class DatabaseManager(Borg):

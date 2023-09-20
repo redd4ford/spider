@@ -1,21 +1,21 @@
 from yarl import URL
 
-from controllers.core.loggers import logger
-from controllers.core.types import SupportedActions
-from db.manager import DatabaseManager
-from db.core import (
+from spider.controllers.core.loggers import logger
+from spider.controllers.core.types import SupportedActions
+from spider.db.manager import DatabaseManager
+from spider.db.core import (
     BaseDatabase,
     RecordSet,
 )
-from db.exceptions import (
+from spider.db.exceptions import (
     CredentialsError,
     DatabaseError,
     DatabaseNotFoundError,
     TableAlreadyExists,
     TableNotFoundError,
 )
-from file_storage.core import BaseFileWriter
-from file_storage.implementations import HTMLFileWriter
+from spider.file_storage import BaseFileWriter
+from spider.file_storage import HTMLFileWriter
 
 
 class DatabaseOperationsController:
@@ -59,7 +59,9 @@ class DatabaseOperationsController:
                     logger.info(f'#{counter} {record.url} | {record.title}')
             else:
                 logger.info(f'No data found by parent={parent}')
-        except (CredentialsError, DatabaseNotFoundError, TableNotFoundError) as exc:
+        except (
+            CredentialsError, DatabaseNotFoundError, TableNotFoundError, DatabaseError
+        ) as exc:
             logger.error(exc)
 
     async def drop_table(self, silent: bool = False):
@@ -69,7 +71,9 @@ class DatabaseOperationsController:
         try:
             await self.db.drop_table(silent=silent)
             DatabaseOperationsController.file_controller.drop_all()
-        except (DatabaseNotFoundError, TableNotFoundError, DatabaseError) as exc:
+        except (
+            CredentialsError, DatabaseNotFoundError, TableNotFoundError, DatabaseError
+        ) as exc:
             logger.error(exc)
         else:
             logger.info('Table was dropped successfully.')
@@ -79,8 +83,10 @@ class DatabaseOperationsController:
         Call DAO to create the table.
         """
         try:
-            self.db.create_table(silent=silent)
-        except (DatabaseNotFoundError, TableAlreadyExists, DatabaseError) as exc:
+            await self.db.create_table(silent=silent)
+        except (
+            CredentialsError, DatabaseNotFoundError, TableAlreadyExists, DatabaseError
+        ) as exc:
             logger.error(exc)
         else:
             logger.info('Table was created successfully.')

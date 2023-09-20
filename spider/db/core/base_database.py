@@ -3,9 +3,9 @@ from typing import Any
 
 from sqlalchemy import Table
 
-from db.core import BaseDatabaseMeta
-from db.schema import urls_table
-from file_storage.core import BaseFileWriter
+from spider.db.core import BaseDatabaseMeta
+from spider.db.schema import urls_table
+from spider.file_storage import BaseFileWriter
 
 
 class BaseDatabase(abc.ABC, metaclass=BaseDatabaseMeta):
@@ -39,7 +39,10 @@ class BaseDatabase(abc.ABC, metaclass=BaseDatabaseMeta):
         pass
 
     @abc.abstractmethod
-    async def save(self, key: Any, name: str, content: str, parent: str, silent: bool):
+    async def save(
+        self, key: Any, name: str, content: str, parent: str, silent: bool,
+        overwrite: bool
+    ):
         """
         INSERT/CREATE/SAVE operation. Args can be overriden in case it is needed to
         store different types of data.
@@ -63,7 +66,9 @@ class BaseDatabase(abc.ABC, metaclass=BaseDatabaseMeta):
 
     @classmethod
     @abc.abstractmethod
-    async def update(cls, key: Any, content: str, connection, silent: bool) -> str:
+    async def update(
+        cls, key: Any, content: str, connection, silent: bool, overwrite: bool
+    ) -> str:
         """
         ON CONFLICT DO UPDATE operation. This is meant to be used inside save(), so
         an existing :param connection: should be passed.
@@ -78,7 +83,7 @@ class BaseDatabase(abc.ABC, metaclass=BaseDatabaseMeta):
         pass
 
     @abc.abstractmethod
-    def create_table(self, check_first: bool = False, silent: bool = False):
+    async def create_table(self, check_first: bool = False, silent: bool = False):
         """
         CREATE TABLE operation. :param silent: is used to remove logging from an ORM.
         """

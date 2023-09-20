@@ -16,21 +16,21 @@ from sqlalchemy.sql.expression import (
 )
 from yarl import URL
 
-from controllers.core.loggers import logger
-from db.core import (
+from spider.controllers.core.loggers import logger
+from spider.db.core import (
     BaseDatabase,
     Borg,
 )
-from db.exceptions import (
+from spider.db.exceptions import (
     CredentialsError,
     DatabaseError,
     DatabaseNotFoundError,
     TableAlreadyExists,
     TableNotFoundError,
 )
-from db.schema import urls_unique_constraint
-from file_storage.core import BaseFileWriter
-from file_storage.implementations import HTMLFileWriter
+from spider.db.schema import urls_unique_constraint
+from spider.file_storage import BaseFileWriter
+from spider.file_storage import HTMLFileWriter
 
 
 class PostgresDatabase(BaseDatabase, Borg):
@@ -99,7 +99,8 @@ class PostgresDatabase(BaseDatabase, Borg):
         )
 
     async def save(
-        self, key: URL, name: str, content: str, parent: str, silent: bool = False
+        self, key: URL, name: str, content: str, parent: str, silent: bool = False,
+        overwrite: bool = True
     ):
         """
         Save an entry to the DB.
@@ -119,7 +120,9 @@ class PostgresDatabase(BaseDatabase, Borg):
                         constraint=self.unique_constraint,
                         set_={
                             'title': name,
-                            'html': await self.update(key, content, conn, silent),
+                            'html': await self.update(
+                                key, content, conn, silent, overwrite
+                            ),
                             'parent': parent
                         }
                     )
@@ -154,7 +157,8 @@ class PostgresDatabase(BaseDatabase, Borg):
             raise TableNotFoundError(self.table.name, self.__db_name)
 
     async def update(
-        self, url: URL, content: str, connection: PoolConnectionProxy, silent: bool
+        self, url: URL, content: str, connection: PoolConnectionProxy, silent: bool,
+        overwrite: bool
     ) -> str:
         """
         Delete HTML file and store a new one if URL was previously crawled.
@@ -167,9 +171,11 @@ class PostgresDatabase(BaseDatabase, Borg):
         old_html = await connection.fetchval(query)
 
         if old_html:
-            self.file_controller.delete(old_html)
-            logger.crawl_info(f'Overwrite file: {old_html}')
-
+            if overwrite:
+                self.file_controller.delete(old_html)
+                logger.crawl_info(f'Overwrite file: {old_html}')
+            else:
+                return old_html
         return await self.file_controller.write(url, content)
 
     async def count_all(self) -> int:
@@ -201,7 +207,7 @@ class PostgresDatabase(BaseDatabase, Borg):
         except sqlalchemy.exc.ProgrammingError:
             raise TableNotFoundError(self.table.name, self.__db_name)
 
-    def create_table(self, check_first: bool = False, silent: bool = False):
+    async def create_table(self, check_first: bool = False, silent: bool = False):
         """
         Create the table.
         """

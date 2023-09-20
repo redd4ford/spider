@@ -5,7 +5,7 @@ from typing import (
     Callable,
 )
 
-from controllers.core.loggers import logger
+from spider.controllers.core.loggers import logger
 
 
 def log_time(func: Callable[..., Any]) -> Callable[..., Any]:

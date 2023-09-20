@@ -16,13 +16,13 @@ from httpx import (
 )
 from yarl import URL
 
-from crawler.decorators import (
+from spider.crawler.decorators import (
     log_time,
     use_cache,
 )
-from controllers.core.loggers import logger
-from crawler.exceptions import IncorrectProxyFormatError
-from db.core import BaseDatabase
+from spider.controllers.core.loggers import logger
+from spider.crawler.exceptions import IncorrectProxyFormatError
+from spider.db.core import BaseDatabase
 
 
 class Crawler:
@@ -33,7 +33,8 @@ class Crawler:
     def __init__(
         self, database: BaseDatabase, start_url: str, depth: int,
         silent: bool = False, should_log_time: bool = True, should_use_cache: bool = True,
-        proxy: Union[str, bool] = False, concurrency_limit: int = 5
+        overwrite: bool = True, proxy: Union[str, bool] = False,
+        concurrency_limit: int = 5,
     ):
         self.proxy = proxy if isinstance(proxy, str) else None
         client_proxies = (
@@ -52,6 +53,7 @@ class Crawler:
         self.url = URL(start_url)
         self.depth = depth
         self.silent = silent
+        self.overwrite = overwrite
         self.should_log_time = should_log_time
         self.should_use_cache = should_use_cache
         self.concurrency_limit = concurrency_limit
@@ -71,7 +73,7 @@ class Crawler:
         """
         try:
             await self.db.connect()
-            self.db.create_table(check_first=True, silent=True)
+            await self.db.create_table(check_first=True, silent=True)
         except Exception as exc:
             logger.error(f'Database connection error: {exc}')
             return
@@ -104,7 +106,7 @@ class Crawler:
         asyncio.ensure_future(
             self.db.save(
                 url, title, html_body, parent=self.url.human_repr(),
-                silent=self.silent
+                silent=self.silent, overwrite=self.overwrite,
             ),
             loop=asyncio.get_running_loop()
         )

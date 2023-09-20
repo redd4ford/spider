@@ -7,17 +7,17 @@ from typing import (
 import aioredis
 from yarl import URL
 
-from controllers.core.loggers import logger
-from db.core import (
+from spider.controllers.core.loggers import logger
+from spider.db.core import (
     BaseDatabase,
     Borg,
 )
-from db.exceptions import (
+from spider.db.exceptions import (
     CredentialsError,
     DatabaseError,
 )
-from file_storage.core import BaseFileWriter
-from file_storage.implementations import HTMLFileWriter
+from spider.file_storage import BaseFileWriter
+from spider.file_storage import HTMLFileWriter
 
 
 class RedisDatabase(BaseDatabase, Borg):
@@ -86,7 +86,8 @@ class RedisDatabase(BaseDatabase, Borg):
         return self.__redis
 
     async def save(
-        self, key: URL, name: str, content: str, parent: str, silent: bool = False
+        self, key: URL, name: str, content: str, parent: str, silent: bool = False,
+        overwrite: bool = True
     ):
         """
         Save an entry to the DB.
@@ -94,26 +95,15 @@ class RedisDatabase(BaseDatabase, Borg):
         if name is None:
             return
 
-        existing_record = await self.__redis.hgetall(str(key))
-        if existing_record is not None:
-            html = await self.update(key, content, None, silent)
-            await self.__redis.hmset_dict(
-                str(key),
-                {
-                    'title': name,
-                    'html': html,
-                }
-            )
-        else:
-            html = await self.file_controller.write(key, content)
-            await self.__redis.hmset_dict(
-                str(key),
-                {
-                    'title': name,
-                    'html': html,
-                    'parent': parent,
-                }
-            )
+        html = await self.update(key, content, None, silent, overwrite)
+        await self.__redis.hmset_dict(
+            str(key),
+            {
+                'title': name,
+                'html': html,
+                'parent': parent,
+            }
+        )
 
     async def get(self, parent: str, limit: int = 10) -> List[Dict[str, str]]:
         """
@@ -157,19 +147,21 @@ class RedisDatabase(BaseDatabase, Borg):
         await self.disconnect()
         return counter
 
-    async def update(self, key: URL, content: str, _, silent: bool) -> str:
+    async def update(
+        self, key: URL, content: str, _, silent: bool, overwrite: bool
+    ) -> str:
         """
         Delete HTML file and store a new one if URL was previously crawled.
         """
         old_html = await self.__redis.hmget(str(key), 'html')
         if len(old_html) == 1 and old_html[0]:
             old_html = old_html[0].decode('utf-8')
-
-            self.file_controller.delete(old_html)
-            logger.crawl_info(f'Overwrite file: {old_html}')
-
-        file_path = await self.file_controller.write(key, content)
-        return file_path
+            if overwrite:
+                self.file_controller.delete(old_html)
+                logger.crawl_info(f'Overwrite file: {old_html}')
+            else:
+                return old_html
+        return await self.file_controller.write(key, content)
 
     async def drop_table(self, check_first: bool = False, silent: bool = False):
         """
@@ -179,7 +171,7 @@ class RedisDatabase(BaseDatabase, Borg):
         await self.__redis.flushdb()
         await self.disconnect()
 
-    def create_table(self, check_first: bool = False, silent: bool = False):
+    async def create_table(self, check_first: bool = False, silent: bool = False):
         """
         Tables do not exist in Redis, so this method is empty.
         """

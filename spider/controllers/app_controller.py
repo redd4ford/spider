@@ -1,10 +1,10 @@
 from argparse import Namespace
 
-from controllers import DatabaseOperationsController
-from controllers.core.context_managers import DelayedKeyboardInterrupt
-from controllers.core.loggers import logger
-from crawler import Crawler
-from crawler.exceptions import IncorrectProxyFormatError
+from spider.controllers import DatabaseOperationsController
+from spider.controllers.core.context_managers import DelayedKeyboardInterrupt
+from spider.controllers.core.loggers import logger
+from spider.crawler import Crawler
+from spider.crawler.exceptions import IncorrectProxyFormatError
 
 
 class AppController:
@@ -52,8 +52,8 @@ class AppController:
         )
 
         crawl_args = (
-            args.url, args.depth, args.silent, args.log_time, args.cache, args.proxy,
-            args.concur
+            args.url, args.depth, args.silent, args.log_time, args.cache, args.overwrite,
+            args.proxy, args.concur,
         )
 
         logger.update_level(args.silent, operation='crawl')
