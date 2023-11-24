@@ -39,7 +39,7 @@ class TableNotFoundError(Exception):
     def __init__(self, table_name=None, db_name=None):
         self.message = (
             f'Table `{table_name}` does not exist in database `{db_name}`. '
-            'Run `spider.py cobweb create` first.'
+            'Run `cli.py cobweb create` first.'
         )
 
     def __str__(self):

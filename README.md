@@ -1,4 +1,4 @@
-# Spider
+# spider
 redd4ford | v0.0.1 | Python 3.9
 
 ## How it works
@@ -20,10 +20,6 @@ However, on command re-run, it does not skip the links that were scraped before;
 Spider is asynchronous, which ensures that all the pages will eventually be scraped and stored. Donate me a couple of zettabyte hard drives, and I'll scrap the whole Internet with this thing.
 
 Built on abstractions, Spider does not depend on a specific database, file storage, and/or file writer. This lets us add different implementations of DAO level and switch between them.
-
-### Supported databases
-
-
 
 ### Features
 
@@ -76,7 +72,7 @@ If you wish to overwrite your config defaults (or just any specific value, e.g. 
   * `--no-cache` (opt) - disable caching of URLs that were already scraped during this run (leads to DB/file overwrite operations if this link is present in many pages)
   * `--no-logtime` (opt) - disable crawler execution time measuring
   * `--no-overwrite` (opt) - disable overwriting the file if it has been scraped before
-* `$ python spider.py cobweb [action]` - perform DB operations: `drop/create/count`.
+* `$ python cli.py cobweb [action]` - perform DB operations: `drop/create/count`.
   * action=`create` means "create the table in the DB"
   * action=`drop` means "drop the table from the DB and remove all the files stored"
   * action=`count` means "count all the records in the table"
