@@ -1,5 +1,5 @@
 # Spider
-redd4ford | v0.0.1
+redd4ford | v0.0.1 | Python 3.9
 
 ## How it works
 
@@ -15,15 +15,28 @@ The key parameter of `crawl` is `--depth`. The depth level lets you specify how 
 
 Spider has a cache to prevent re-loading of the pages that were previously scraped during **this command run**. This means that if the parent URL contains the same link as its child (or some children share the same link, etc.), the crawler skips that link.
 
-However, on command re-run, it does not skip the links that were scraped before; instead, it overwrites the files stored and updates the file path in the DB.
+However, on command re-run, it does not skip the links that were scraped before; instead, it overwrites the files stored and updates the file path in the DB. You can control that behavior with [command parameters](https://github.com/redd4ford/spider#commands).
 
 Spider is asynchronous, which ensures that all the pages will eventually be scraped and stored. Donate me a couple of zettabyte hard drives, and I'll scrap the whole Internet with this thing.
 
-Built on abstractions, Spider does not depend on a specific database and/or file writer. This lets us add different implementations of DAO level and (potentially) switch between them.
+Built on abstractions, Spider does not depend on a specific database, file storage, and/or file writer. This lets us add different implementations of DAO level and switch between them.
 
-Currently, it supports HTML scraping and async PostgreSQL with SQLAlchemy.
+### Supported databases
 
-Uses Python 3.9.
+
+
+### Features
+
+Currently, you can:
+- **Scrap** web pages as HTML;
+
+
+- **Cache the results** asynchronously to one of the supported databases:
+
+[![PostgreSQL, MySQL, SQLite, Redis, MongoDB, Firebase](https://skillicons.dev/icons?i=postgres,mysql,sqlite,redis,mongodb,firebase&perline=6)](https://skillicons.dev)
+- **Store the file contents** locally.
+
+Sounds pretty neat, huh?
 
 ## Installation
 
@@ -54,17 +67,18 @@ If you wish to overwrite your config defaults (or just any specific value, e.g. 
 
 ### Commands
 
-* `$ python spider.py catch [url] -n [int]` - get **n** URLs from the DB where parent URL=**url**
-* `$ python spider.py crawl [url] --depth [int]` - crawl **url** with specified **depth**.
+* `$ python cli.py catch [url] -n [int]` - get **n** (default=10) URLs from the DB where parent URL=**url**
+* `$ python cli.py crawl [url] --depth [int]` - crawl **url** with specified **depth**.
   * `--depth` (default=1) - specify how many child URLs (`<a>` tags) you want to crawl
   * `--concur` (default=5) - set the concurrency limit to reduce (or increase) stress on your machine and target web server, but keep in mind that crawling may become way slower (or way faster)
   * `--use-proxy` (opt) - use the proxy server specified in your config file when you want to avoid IP blocking or 
   * `--silent` (opt) - use this argument to run the command in silent mode, without any logs from the crawler
   * `--no-cache` (opt) - disable caching of URLs that were already scraped during this run (leads to DB/file overwrite operations if this link is present in many pages)
   * `--no-logtime` (opt) - disable crawler execution time measuring
+  * `--no-overwrite` (opt) - disable overwriting the file if it has been scraped before
 * `$ python spider.py cobweb [action]` - perform DB operations: `drop/create/count`.
-  * action=`drop` means "drop the table from the DB and remove all the files stored"
   * action=`create` means "create the table in the DB"
+  * action=`drop` means "drop the table from the DB and remove all the files stored"
   * action=`count` means "count all the records in the table"
   * `--silent` (opt) - use this argument to run the command in silent mode, without any ORM logs
 
@@ -75,9 +89,20 @@ v0.0.2
   - [x] Redis, 
   - [x] MySQL, 
   - [ ] SQLite,
-  - [ ] MongoDB,
   - [ ] Firebase,
+  - [ ] MongoDB,
   - [ ] Elasticsearch
+- [ ] Add tests:
+  - [ ] Database layer
+    - [ ] PostgreSQL implementation
+    - [ ] Redis implementation
+    - [ ] MySQL implementation
+    - [ ] SQLite implementation
+    - [ ] Firebase implementation
+    - [ ] MongoDB implementation
+    - [ ] Elasticsearch implementation
+  - [ ] Crawler
+
 
 v0.0.3
 - [ ] Implement parsing of different file types (XML, CSS, JavaScript, etc.)
@@ -101,6 +126,7 @@ v1.0.0
 - [x] Proxy support
 - [x] Add `--concur (int)` parameter in `crawl`
 - [x] Add `--no-overwrite (bool)` parameter in `crawl`
+- [x] Add tests for the Controller layer
 
 ## Why?
 

@@ -1,3 +1,5 @@
+from typing import Literal
+
 from yarl import URL
 
 from spider.controllers.core.loggers import logger
@@ -29,11 +31,13 @@ class DatabaseOperationsController:
         self._database_manager = DatabaseManager()
         self.db: BaseDatabase = self.__build_database(db_type, login, pwd, host, db_name)
         logger.db_info(
-            f'Initialized {db_type} `{db_name}` to work with '
+            f'Initialized {self.db.verbose} `{db_name}` to work with '
             f'table `{self.db.table.name}`.'
         )
 
-    async def run_action(self, action: str, silent: bool = False):
+    async def run_action(
+        self, action: Literal["drop", "create", "count"], silent: bool = False
+    ):
         """
         Map :param action: to a specific method.
         """
@@ -85,7 +89,7 @@ class DatabaseOperationsController:
         try:
             await self.db.create_table(silent=silent)
         except (
-            CredentialsError, DatabaseNotFoundError, TableAlreadyExists, DatabaseError
+            CredentialsError, DatabaseNotFoundError, TableAlreadyExists, DatabaseError,
         ) as exc:
             logger.error(exc)
         else:

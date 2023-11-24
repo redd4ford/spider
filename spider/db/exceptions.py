@@ -1,7 +1,26 @@
+import sqlalchemy
+
+
 class DatabaseError(Exception):
     def __init__(self, base_error):
-        self.message = base_error
+        self.message = self.format_exception(base_error)
         super().__init__(self.message)
+
+    @classmethod
+    def format_exception(cls, exc: Exception) -> str:
+        if type(exc) is sqlalchemy.exc.OperationalError:
+            message = str(exc.orig).replace('\n', '').capitalize()
+            if not message.endswith('.') or not message.endswith('?'):
+                message += '.'
+        else:
+            try:
+                code, message = eval(str(exc))
+            except SyntaxError:
+                message = str(exc)
+            message = message.replace('\n', '').capitalize()
+            if not message.endswith('.') or not message.endswith('?'):
+                message += '.'
+        return message
 
 
 class DatabaseNotFoundError(Exception):

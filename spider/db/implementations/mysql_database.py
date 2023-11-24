@@ -81,7 +81,7 @@ class MySqlDatabase(BaseDatabase, Borg):
         except ConnectionRefusedError as exc:
             raise DatabaseError(base_error=exc)
         except Exception as exc:
-            raise DatabaseError(base_error=self.__format_exception(exc))
+            raise DatabaseError(base_error=exc)
 
     async def disconnect(self):
         """
@@ -258,19 +258,11 @@ class MySqlDatabase(BaseDatabase, Borg):
         finally:
             await self.disconnect()
 
-    @classmethod
-    def __format_exception(cls, exc: Exception) -> str:
-        try:
-            code, message = eval(str(exc))
-        except SyntaxError:
-            message = str(exc)
-        message = message.replace('\n', '').capitalize()
-        if not message.endswith('.'):
-            message += '.'
-        return message
-
     def __throw_operational_error(
-        self, exc: Union[sqlalchemy.exc.OperationalError, MySQLdb.OperationalError]
+        self, exc: Union[
+            pymysql.err.OperationalError, sqlalchemy.exc.OperationalError,
+            MySQLdb.OperationalError
+        ]
     ):
         message = str(exc).lower()
         if "already exists" in message:
@@ -283,8 +275,8 @@ class MySqlDatabase(BaseDatabase, Borg):
             raise CredentialsError(self.__db_host)
         elif "can't connect" in message:
             raise DatabaseError(
-                base_error=self.__format_exception(exc) +
+                base_error=DatabaseError.format_exception(exc) +
                 ' If your server is running and you can access it, it is likely that '
                 f'database `{self.__db_name}` does not exist.')
         else:
-            raise DatabaseError(base_error=self.__format_exception(exc))
+            raise DatabaseError(base_error=exc)

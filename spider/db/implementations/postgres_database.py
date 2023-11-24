@@ -73,9 +73,12 @@ class PostgresDatabase(BaseDatabase, Borg):
         try:
             await self.__init()
             return self.__pg
-        except asyncpg.exceptions.InvalidPasswordError:
+        except (
+            asyncpg.exceptions.InvalidPasswordError,
+            asyncpg.exceptions.InvalidAuthorizationSpecificationError,
+        ):
             raise CredentialsError(self.__db_host)
-        except socket.gaierror as exc:
+        except (socket.gaierror, ConnectionRefusedError) as exc:
             raise DatabaseError(base_error=exc)
         except asyncpg.exceptions.InvalidCatalogNameError:
             raise DatabaseNotFoundError(self.__db_name, self.__db_host)
@@ -203,7 +206,7 @@ class PostgresDatabase(BaseDatabase, Borg):
         try:
             self.table.drop(self.engine(silent), check_first)
         except sqlalchemy.exc.OperationalError as exc:
-            raise DatabaseError(base_error=self.__format_exception(exc))
+            raise DatabaseError(base_error=exc)
         except sqlalchemy.exc.ProgrammingError:
             raise TableNotFoundError(self.table.name, self.__db_name)
 
@@ -214,10 +217,6 @@ class PostgresDatabase(BaseDatabase, Borg):
         try:
             self.table.create(self.engine(silent), check_first)
         except sqlalchemy.exc.OperationalError as exc:
-            raise DatabaseError(base_error=self.__format_exception(exc))
+            raise DatabaseError(base_error=exc)
         except sqlalchemy.exc.ProgrammingError:
             raise TableAlreadyExists(self.table.name, self.__db_name)
-
-    @classmethod
-    def __format_exception(cls, exc: sqlalchemy.exc.OperationalError) -> str:
-        return str(exc.orig).replace('\n', '').capitalize()

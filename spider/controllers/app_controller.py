@@ -1,4 +1,5 @@
 from argparse import Namespace
+from typing import Tuple, Union
 
 from spider.controllers import DatabaseOperationsController
 from spider.controllers.core.context_managers import DelayedKeyboardInterrupt
@@ -13,6 +14,28 @@ class AppController:
     """
 
     @classmethod
+    def __get_db_login_args(cls, args: Namespace) -> Tuple[str, str, str, str, str]:
+        """
+        Extract database login arguments.
+        """
+        return (
+            args.db_type.lower().strip(),
+            args.db_user, args.db_pwd, args.db_host, args.db_name
+        )
+
+    @classmethod
+    def __get_crawl_args(
+        cls, args: Namespace
+    ) -> Tuple[str, int, bool, bool, bool, bool, Union[str, bool], int]:
+        """
+        Extract Crawler parameters.
+        """
+        return (
+            args.url, args.depth, args.silent,
+            args.log_time, args.cache, args.overwrite, args.proxy, args.concur,
+        )
+
+    @classmethod
     async def catch(cls, args: Namespace):
         """
         Select from DB.
@@ -21,10 +44,7 @@ class AppController:
                 connection, provide a URL (:param args.url:) to select by, and optionally
                 limit the number of DB entries returned (:param args.n:).
         """
-        db_login_args = (
-            args.db_type.lower().strip(), args.db_user, args.db_pwd, args.db_host,
-            args.db_name
-        )
+        db_login_args = cls.__get_db_login_args(args)
         get_args = (args.url, args.n)
 
         await (
@@ -46,15 +66,8 @@ class AppController:
                     and all the links inside them as well".
                     etc.
         """
-        db_login_args = (
-            args.db_type.lower().strip(), args.db_user, args.db_pwd, args.db_host,
-            args.db_name
-        )
-
-        crawl_args = (
-            args.url, args.depth, args.silent, args.log_time, args.cache, args.overwrite,
-            args.proxy, args.concur,
-        )
+        db_login_args = cls.__get_db_login_args(args)
+        crawl_args = cls.__get_crawl_args(args)
 
         logger.update_level(args.silent, operation='crawl')
 
@@ -71,16 +84,13 @@ class AppController:
     @classmethod
     async def db(cls, args: Namespace):
         """
-        Perform actions on the DB. See class `Actions` which contains all the supported
-        actions.
+        Perform actions on the DB. See class `SupportedActions` which contains all the
+        supported actions.
         Args:
             :param args: (Namespace) - A set of args entered by the user to specify
                 the exact action (:param args.action:), and perform DB connection.
         """
-        db_login_args = (
-            args.db_type.lower().strip(), args.db_user, args.db_pwd, args.db_host,
-            args.db_name
-        )
+        db_login_args = cls.__get_db_login_args(args)
 
         logger.update_level(args.silent, operation='db')
 

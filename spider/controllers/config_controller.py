@@ -1,12 +1,10 @@
 from argparse import Namespace
 from configparser import ConfigParser
 import os
-from typing import (
-    List,
-    Optional,
-)
+from typing import Optional
 
 from spider.controllers.core.loggers import logger
+from spider.controllers.core.types import ConfigSections
 from spider.db import DatabaseManager
 
 
@@ -15,29 +13,32 @@ class ConfigController:
     Handles work with the config file.
     """
 
-    file_name: str = 'config.ini'
-    sections: List[str] = ['DATABASE', 'INFRASTRUCTURE']
+    DEFAULT_FILE_NAME: str = 'config.ini'
 
-    def __init__(self):
+    def __init__(self, config_file_path: str = None):
+        if config_file_path:
+            self.file_name = config_file_path
+        else:
+            self.file_name = ConfigController.DEFAULT_FILE_NAME
         if not os.path.exists(self.file_name):
             self.__create_empty_config()
             logger.warning(f'File `{self.file_name}` does not exist, creating it...')
 
         self.config = ConfigParser()
-        self.config.read('config.ini')
+        self.config.read(self.file_name)
 
         self.database_manager = DatabaseManager()
 
-        self.db_config = self.config['DATABASE']
-        self.infrastructure_config = self.config['INFRASTRUCTURE']
+        self.db_config = self.config[ConfigSections.DATABASE]
+        self.infrastructure_config = self.config[ConfigSections.INFRASTRUCTURE]
 
     def __create_empty_config(self):
         """
         Create an empty config file with the specified sections.
         """
         with open(self.file_name, 'a') as config_file:
-            for section in self.sections:
-                config_file.write(f'[{section}]')
+            for section in ConfigSections.all():
+                config_file.write(f'[{section}]\n')
 
     def get_db_config(self, key: str) -> Optional[str]:
         """
@@ -55,16 +56,16 @@ class ConfigController:
         """
         Set :param value: for a :param key: field in the config's :param section:.
         """
-        if section not in self.sections:
-            raise ValueError('This section is not listed in ConfigController.sections')
+        if section not in ConfigSections.all():
+            raise ValueError(f'Section `{section}` is not listed in ConfigSections')
         self.config.set(section, key, value)
 
     def is_config_section_empty(self, section: str) -> bool:
         """
         Check if :param section: in config is empty.
         """
-        if section not in self.sections:
-            raise ValueError('This section is not listed in ConfigController.sections')
+        if section not in ConfigSections.all():
+            raise ValueError(f'Section `{section}` is not listed in ConfigSections')
         return len(self.config[section].values()) == 0
 
     def update(self, args: Namespace):
@@ -82,7 +83,7 @@ class ConfigController:
         }
 
         for name, value in db_login_args.items():
-            self.set_config('DATABASE', name, value)
+            self.set_config(ConfigSections.DATABASE, name, value)
 
         self.__update_config_file()
 
